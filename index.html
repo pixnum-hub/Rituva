@@ -3,77 +3,121 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva</title>
+<title>Rituva – Smart Weather</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#667eea">
 
 <style>
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
-body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;transition:background 0.3s,color 0.3s;}
-body{background:linear-gradient(135deg,#667eea,#764ba2);color:#000;}
-.app{width:100%;max-width:380px;padding:20px;border-radius:20px;backdrop-filter:blur(18px);background:rgba(255,255,255,0.15);transition:background 0.3s,color 0.3s;}
-input,button{width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px;transition:background 0.3s,color 0.3s;}
-button{background: rgba(255,255,255,0.35); font-weight:bold;}
-.icon{font-size:48px;text-align:center;}
-.details{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px;}
-.detail-card{background: rgba(255,255,255,0.2);border-radius:16px;padding:12px;text-align:center;transition: background 0.3s,color 0.3s;}
-.big{font-size:26px;font-weight:bold;}
-.label{font-size:13px;}
-.hint{font-size:12px;margin-top:6px;}
-.hourly{display:flex;gap:6px;overflow-x:auto;margin-top:10px;align-items:end;height:120px;}
-.hour{min-width:24px;display:flex;flex-direction: column;justify-content:flex-end;align-items:center;}
-.hour-bar{width:18px;border-radius:6px 6px 0 0;margin-bottom:4px;transition: background 0.3s,height 0.3s;}
-.hour-label{font-size:11px;margin-top:2px;color:inherit;}
-.forecast{display:flex;gap:10px;overflow-x:auto;margin-top:10px;align-items:end;height:120px;}
-.day{min-width:40px;display:flex;flex-direction: column;justify-content:flex-end;align-items:center;}
-.day-bar-container{display:flex;flex-direction: column;justify-content:flex-end;height:80px;width:16px;margin-bottom:4px;}
-.day-bar-min,.day-bar-max{width:16px;border-radius:6px 6px 0 0;margin-bottom:2px;transition:background 0.3s,height 0.3s;}
-.day-bar-min{background: rgba(0,150,255,0.6);}
-.day-bar-max{background: rgba(255,80,50,0.7);}
-.day-label{font-size:11px;margin-top:2px;color:inherit;}
-@media(max-width:420px){.details{grid-template-columns:1fr;}}
-.aqi-good{color:#00e676;}
-.aqi-moderate{color:#ffeb3b;}
-.aqi-poor{color:#ff9800;}
-.aqi-severe{color:#f44336;}
-#installBtn{display:none;margin-top:10px;background: rgba(255,255,255,0.5);font-weight:bold;border-radius:12px;width:100%;padding:12px;transition:background 0.3s;}
-#installBtn:hover{background: rgba(255,255,255,0.7);cursor:pointer;}
-@media (prefers-color-scheme: dark){
-  body{background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;}
-  .app{background: rgba(0,0,0,0.25);color:#fff;}
-  input,button{background: rgba(255,255,255,0.1);color:#fff;}
-  .detail-card{background: rgba(0,0,0,0.35);}
-  .hour-bar,.day-bar-max,.day-bar-min{transition: background 0.3s,height 0.3s;}
-  .hour-label,.day-label{color:#fff;}
+body{
+  margin:0;min-height:100vh;display:flex;justify-content:center;
+  align-items:flex-start;padding:12px;overflow:auto;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#000;transition:.3s;
+}
+body.dark{
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  color:#fff;
+}
+.app{
+  width:100%;max-width:380px;min-height:100vh;
+  padding:16px;border-radius:22px;
+  backdrop-filter:blur(18px);
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,.35);
+  display:flex;flex-direction:column;
+}
+body.dark .app{background:rgba(0,0,0,.35)}
+input,button{
+  width:100%;padding:12px;border-radius:12px;
+  border:none;margin-bottom:10px;text-align:center;
+}
+button{background:rgba(255,255,255,.35);font-weight:bold}
+.icon{font-size:48px}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.detail-card{
+  background:rgba(255,255,255,.2);
+  border-radius:16px;padding:12px;text-align:center
+}
+body.dark .detail-card{background:rgba(0,0,0,.4)}
+.big{font-size:26px;font-weight:bold}
+.label{font-size:13px}
+.hint{font-size:12px;margin-top:6px}
+
+.hourly,.forecast{
+  display:flex;gap:10px;overflow-x:auto;
+  margin-top:12px;height:140px;padding:6px
+}
+.hour,.day{
+  min-width:36px;display:flex;
+  flex-direction:column;align-items:center;justify-content:flex-end
+}
+.hour-label,.day-label{font-size:11px}
+
+.day-bar-container{height:80px;width:16px;display:flex;flex-direction:column;justify-content:flex-end}
+.day-bar-min{background:rgba(0,150,255,.6)}
+.day-bar-max{background:rgba(255,80,50,.7)}
+
+.aqi-good{color:#00e676}
+.aqi-moderate{color:#ffeb3b}
+.aqi-poor{color:#ff9800}
+.aqi-severe{color:#ff5252}
+
+#installBtn{display:none}
+
+.loading-overlay{
+  position:absolute;inset:0;
+  background:rgba(255,255,255,.25);
+  backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;
+  border-radius:22px;font-size:18px
+}
+
+.footer{
+  margin-top:16px;font-size:11px;
+  opacity:.8;text-align:center
 }
 </style>
 </head>
+
 <body>
 <div class="app">
-  <h1>🌦 Rituva</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h1>🌦 Rituva</h1>
+    <button id="darkToggle" style="width:42px;height:42px;border-radius:50%">🌓</button>
+  </div>
+
   <input id="cityInput" placeholder="Search city">
   <button onclick="searchCity()">Search</button>
   <button id="installBtn">📲 Install Rituva</button>
 
-  <div class="current">
-    <h2 id="location">Your Location</h2>
+  <div class="loading-overlay" id="loading">Loading…</div>
+
+  <div class="current" style="text-align:center">
+    <h2 id="location">Detecting location…</h2>
     <div id="icon" class="icon">⛅</div>
-    <p id="temp">--°C</p>
-    <p id="wind">-- km/h</p>
-    <p id="pressure">-- hPa</p>
+    <p id="temp">--°</p>
+    <p id="feels">🌡 Feels like: --</p>
+    <p id="wind">🌬 -- km/h</p>
+    <p id="gust">💨 Gust: -- km/h</p>
+    <p id="humidity">💧 Humidity: --%</p>
+    <p id="pressure">📟 Pressure: -- hPa</p>
+    <p id="uv">☀ UV: --</p>
+    <p id="rain">🌧 Rain chance: --%</p>
+    <p id="updated">⏱ Updated: --</p>
   </div>
 
   <div class="details">
     <div class="detail-card">
       <h4>🧭 Wind Direction</h4>
       <div id="compassValue" class="big">--°</div>
-      <div id="compassDir" class="label">Direction: --</div>
+      <div id="compassDir" class="label">--</div>
     </div>
-    <div class="detail-card">
-      <h4>🌫 Air Quality Index (PM2.5)</h4>
+    <div class="detail-card" id="aqiCard">
+      <h4>🌫 AQI (PM2.5)</h4>
       <div id="aqiValue" class="big">--</div>
-      <div id="aqiLabel" class="label">Category: --</div>
+      <div id="aqiLabel" class="label">--</div>
       <div id="aqiAdvice" class="hint">--</div>
     </div>
   </div>
@@ -81,115 +125,101 @@ button{background: rgba(255,255,255,0.35); font-weight:bold;}
   <h3>🕒 Next 24 Hours</h3>
   <div class="hourly" id="hourlyTemp"></div>
 
-  <h3>📅 7-Day Forecast (Min / Max)</h3>
+  <h3>📅 7-Day Forecast</h3>
   <div class="forecast" id="forecast"></div>
+
+  <footer class="footer">© Manik Roy 2025. All Rights Reserved.</footer>
 </div>
 
 <script>
-// ICONS
 const icons={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",61:"🌧",71:"❄",95:"⛈"};
+const compassValue=document.getElementById("compassValue");
+const compassDir=document.getElementById("compassDir");
 
-// COMPASS
-function compassDirection(d){const a=["North","NE","East","SE","South","SW","West","NW"];return a[Math.round(d/45)%8];}
-if("DeviceOrientationEvent" in window){
-  window.addEventListener("deviceorientation", e=>{
+function compassDirection(d){
+  return["North","NE","East","SE","South","SW","West","NW"][Math.round(d/45)%8]
+}
+if("DeviceOrientationEvent"in window){
+  window.addEventListener("deviceorientation",e=>{
     if(e.alpha!=null){
-      compassValue.innerText=`${Math.round(e.alpha)}°`;
-      compassDir.innerText=`Direction: ${compassDirection(e.alpha)}`;
+      const d=Math.round(e.alpha);
+      compassValue.textContent=d+"°";
+      compassDir.textContent=compassDirection(d);
     }
   });
 }
 
-// AQI logic
 function aqiInfo(pm){
-  if(pm<=30) return {l:"Good",a:"Safe outdoors"};
-  if(pm<=60) return {l:"Moderate",a:"Sensitive reduce exposure"};
-  if(pm<=90) return {l:"Poor",a:"Avoid long outdoor stay"};
-  return {l:"Severe",a:"Stay indoors"};
+  if(pm<=30)return{l:"Good",a:"Safe outdoors",c:"aqi-good"};
+  if(pm<=60)return{l:"Moderate",a:"Sensitive reduce exposure",c:"aqi-moderate"};
+  if(pm<=90)return{l:"Poor",a:"Avoid long outdoor stay",c:"aqi-poor"};
+  return{l:"Severe",a:"Stay indoors",c:"aqi-severe"};
 }
 
-// LOAD WEATHER
-async function loadWeather(lat, lon, name, country){
-  const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,surface_pressure&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`).then(r=>r.json());
-  const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+function showLoading(s){loading.style.display=s?"flex":"none"}
 
-  location.innerText=`${name} ${country}`;
-  temp.innerText=`🌡 ${w.current_weather.temperature}°C`;
-  wind.innerText=`🌬 ${w.current_weather.windspeed} km/h`;
-  pressure.innerText=`📟 ${w.hourly.surface_pressure[0]} hPa`;
-  icon.innerText=icons[w.current_weather.weathercode]||"⛅";
+async function loadWeather(lat,lon,name,country){
+  try{
+    showLoading(true);
+    const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,windgusts_10m,surface_pressure&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`).then(r=>r.json());
+    const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
 
-  const pm=a.hourly.pm2_5[0];
-  const ai=aqiInfo(pm);
-  aqiValue.innerText=`${pm} µg/m³`;
-  aqiLabel.innerText=`Category: ${ai.l}`;
-  aqiAdvice.innerText=`Health: ${ai.a}`;
+    location.textContent=name?(name+", "+country):"Current Location";
+    temp.textContent=`🌡 ${w.current_weather.temperature}°C`;
+    wind.textContent=`🌬 ${w.current_weather.windspeed} km/h`;
+    pressure.textContent=`📟 ${w.hourly.surface_pressure[0]} hPa`;
+    icon.textContent=icons[w.current_weather.weathercode]||"⛅";
 
-  // HOURLY chart
-  hourlyTemp.innerHTML="";
-  const temps=w.hourly.temperature_2m.slice(0,24);
-  const minT=Math.min(...temps), maxT=Math.max(...temps);
-  temps.forEach((t,i)=>{
-    const h=20+((t-minT)/(maxT-minT))*100;
-    const r=Math.min(255,Math.round((t-minT)/(maxT-minT)*255));
-    const b=255-r;
-    const color=`rgb(${r},50,${b})`;
-    hourlyTemp.innerHTML+=`<div class="hour"><div class="hour-bar" style="height:${h}px;background:${color};"></div><div class="hour-label">${i}h</div></div>`;
-  });
+    const ai=aqiInfo(a.hourly.pm2_5[0]);
+    aqiCard.className="detail-card "+ai.c;
+    aqiValue.textContent=a.hourly.pm2_5[0]+" µg/m³";
+    aqiLabel.textContent=ai.l;
+    aqiAdvice.textContent=ai.a;
 
-  // 7-DAY forecast
-  forecast.innerHTML="";
-  const dailyMin=w.daily.temperature_2m_min;
-  const dailyMax=w.daily.temperature_2m_max;
-  const minAll=Math.min(...dailyMin);
-  const maxAll=Math.max(...dailyMax);
-  w.daily.time.forEach((d,i)=>{
-    const minH=20+((dailyMin[i]-minAll)/(maxAll-minAll))*60;
-    const maxH=20+((dailyMax[i]-minAll)/(maxAll-minAll))*60;
-    forecast.innerHTML+=`<div class="day"><div class="day-bar-container"><div class="day-bar-max" style="height:${maxH}px"></div><div class="day-bar-min" style="height:${minH}px"></div></div><div>${icons[w.daily.weathercode[i]]||"⛅"}</div><div class="day-label">${d.slice(5)}</div></div>`;
-  });
-}
-
-// SEARCH CITY
-async function searchCity(){
-  const city=cityInput.value;
-  if(!city) return;
-  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`).then(r=>r.json());
-  if(!g.results) return alert("City not found");
-  const {latitude,longitude,name,country}=g.results[0];
-  loadWeather(latitude,longitude,name,country);
-}
-
-// CURRENT LOCATION
-navigator.geolocation.getCurrentPosition(p=>{loadWeather(p.coords.latitude,p.coords.longitude,"Your Location","");});
-
-// ==== REGISTER SERVICE WORKER ====
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
-      console.log("SW registered", reg);
-    }).catch(err=>{
-      console.log("SW failed", err);
+    hourlyTemp.innerHTML="";
+    w.hourly.temperature_2m.slice(0,24).forEach((t,i)=>{
+      hourlyTemp.innerHTML+=`<div class="hour"><div style="height:${30+t}px;width:20px;background:#4fc3f7;border-radius:6px"></div><div class="hour-label">${i==0?"Now":(new Date().getHours()+i)%24+":00"}</div></div>`;
     });
-  });
+
+    forecast.innerHTML="";
+    w.daily.time.forEach((d,i)=>{
+      forecast.innerHTML+=`<div class="day"><div class="day-bar-container"><div class="day-bar-max" style="height:${w.daily.temperature_2m_max[i]}px"></div><div class="day-bar-min" style="height:${w.daily.temperature_2m_min[i]}px"></div></div>${icons[w.daily.weathercode[i]]||"⛅"}<div class="day-label">${d.slice(5)}</div></div>`;
+    });
+
+  }catch(e){alert("Weather load failed")}
+  finally{showLoading(false)}
 }
 
-// ==== INSTALL BUTTON ====
+async function searchCity(){
+  const q=cityInput.value.trim();
+  if(!q)return;
+  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+  if(!g.results)return alert("City not found");
+  const c=g.results[0];
+  loadWeather(c.latitude,c.longitude,c.name,c.country);
+}
+
+navigator.geolocation.getCurrentPosition(p=>{
+  loadWeather(p.coords.latitude,p.coords.longitude,"","");
+});
+
+darkToggle.onclick=()=>document.body.classList.toggle("dark");
+
+// PWA
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
 let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();deferredPrompt=e;
+  installBtn.style.display="block";
 });
-installBtn.addEventListener('click', async () => {
-  installBtn.style.display = 'none';
-  if(!deferredPrompt) return;
+installBtn.onclick=async()=>{
+  if(!deferredPrompt)return;
   deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log(`User response to install: ${outcome}`);
-  deferredPrompt = null;
-});
+  await deferredPrompt.userChoice;
+  installBtn.style.display="none";
+};
 </script>
 </body>
 </html>
