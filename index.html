@@ -98,14 +98,8 @@ body.dark .detail-card{background:rgba(0,0,0,.4)}
     <h2 id="location">Detecting location…</h2>
     <div id="icon" class="icon">⛅</div>
     <p id="temp">--°</p>
-    <p id="feels">🌡 Feels like: --</p>
     <p id="wind">🌬 -- km/h</p>
-    <p id="gust">💨 Gust: -- km/h</p>
-    <p id="humidity">💧 Humidity: --%</p>
     <p id="pressure">📟 Pressure: -- hPa</p>
-    <p id="uv">☀ UV: --</p>
-    <p id="rain">🌧 Rain chance: --%</p>
-    <p id="updated">⏱ Updated: --</p>
   </div>
 
   <div class="details">
@@ -133,21 +127,8 @@ body.dark .detail-card{background:rgba(0,0,0,.4)}
 
 <script>
 const icons={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",61:"🌧",71:"❄",95:"⛈"};
-const compassValue=document.getElementById("compassValue");
-const compassDir=document.getElementById("compassDir");
-
-function compassDirection(d){
-  return["North","NE","East","SE","South","SW","West","NW"][Math.round(d/45)%8]
-}
-if("DeviceOrientationEvent"in window){
-  window.addEventListener("deviceorientation",e=>{
-    if(e.alpha!=null){
-      const d=Math.round(e.alpha);
-      compassValue.textContent=d+"°";
-      compassDir.textContent=compassDirection(d);
-    }
-  });
-}
+darkToggle.onclick=()=>document.body.classList.toggle("dark");
+function showLoading(s){loading.style.display=s?"flex":"none"}
 
 function aqiInfo(pm){
   if(pm<=30)return{l:"Good",a:"Safe outdoors",c:"aqi-good"};
@@ -156,15 +137,19 @@ function aqiInfo(pm){
   return{l:"Severe",a:"Stay indoors",c:"aqi-severe"};
 }
 
-function showLoading(s){loading.style.display=s?"flex":"none"}
-
 async function loadWeather(lat,lon,name,country){
   try{
     showLoading(true);
-    const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,windgusts_10m,surface_pressure&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`).then(r=>r.json());
-    const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+    location.textContent=name?`${name}${country?", "+country:""}`:"Current Location";
 
-    location.textContent=name?(name+", "+country):"Current Location";
+    const w=await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,surface_pressure&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
+    ).then(r=>r.json());
+
+    const a=await fetch(
+      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
+    ).then(r=>r.json());
+
     temp.textContent=`🌡 ${w.current_weather.temperature}°C`;
     wind.textContent=`🌬 ${w.current_weather.windspeed} km/h`;
     pressure.textContent=`📟 ${w.hourly.surface_pressure[0]} hPa`;
@@ -176,36 +161,52 @@ async function loadWeather(lat,lon,name,country){
     aqiLabel.textContent=ai.l;
     aqiAdvice.textContent=ai.a;
 
-    hourlyTemp.innerHTML="";
-    w.hourly.temperature_2m.slice(0,24).forEach((t,i)=>{
-      hourlyTemp.innerHTML+=`<div class="hour"><div style="height:${30+t}px;width:20px;background:#4fc3f7;border-radius:6px"></div><div class="hour-label">${i==0?"Now":(new Date().getHours()+i)%24+":00"}</div></div>`;
-    });
-
-    forecast.innerHTML="";
-    w.daily.time.forEach((d,i)=>{
-      forecast.innerHTML+=`<div class="day"><div class="day-bar-container"><div class="day-bar-max" style="height:${w.daily.temperature_2m_max[i]}px"></div><div class="day-bar-min" style="height:${w.daily.temperature_2m_min[i]}px"></div></div>${icons[w.daily.weathercode[i]]||"⛅"}<div class="day-label">${d.slice(5)}</div></div>`;
-    });
-
-  }catch(e){alert("Weather load failed")}
+  }catch{alert("Weather load failed")}
   finally{showLoading(false)}
+}
+
+/* 🔥 FAIL-SAFE LOCATION DETECTION */
+function detectLocation(){
+  if(!navigator.geolocation){
+    loadWeather(28.6139,77.2090,"Delhi","IN");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      const lat=pos.coords.latitude;
+      const lon=pos.coords.longitude;
+      try{
+        const r=await fetch(
+          `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`
+        ).then(r=>r.json());
+
+        if(r.results&&r.results.length){
+          loadWeather(lat,lon,r.results[0].name,r.results[0].country);
+        }else{
+          loadWeather(lat,lon,"Current Location","");
+        }
+      }catch{
+        loadWeather(lat,lon,"Current Location","");
+      }
+    },
+    ()=>loadWeather(28.6139,77.2090,"Delhi","IN"),
+    {timeout:8000}
+  );
 }
 
 async function searchCity(){
   const q=cityInput.value.trim();
   if(!q)return;
-  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+  const g=await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`
+  ).then(r=>r.json());
   if(!g.results)return alert("City not found");
   const c=g.results[0];
   loadWeather(c.latitude,c.longitude,c.name,c.country);
 }
 
-navigator.geolocation.getCurrentPosition(p=>{
-  loadWeather(p.coords.latitude,p.coords.longitude,"","");
-});
-
-darkToggle.onclick=()=>document.body.classList.toggle("dark");
-
-// PWA
+/* PWA */
 if("serviceWorker"in navigator){
   navigator.serviceWorker.register("sw.js");
 }
@@ -220,6 +221,8 @@ installBtn.onclick=async()=>{
   await deferredPrompt.userChoice;
   installBtn.style.display="none";
 };
+
+detectLocation();
 </script>
 </body>
 </html>
