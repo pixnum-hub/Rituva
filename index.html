@@ -14,13 +14,14 @@
 
   <h1>🌦 Rituva</h1>
 
-  <!-- INSTALL BUTTON -->
-  <button id="installBtn" hidden>⬇️ Install Rituva</button>
+  <!-- INSTALL -->
+  <button id="installBtn" hidden>⬇️ Add Rituva to Home Screen</button>
+  <p id="installHint" class="hint"></p>
 
   <input id="cityInput" placeholder="Search city">
   <button onclick="searchCity()">Search</button>
 
-  <!-- CURRENT WEATHER -->
+  <!-- CURRENT -->
   <div class="current">
     <h2 id="location"></h2>
     <div id="icon" class="icon"></div>
@@ -32,14 +33,12 @@
   <!-- DETAILS -->
   <div class="details">
 
-    <!-- COMPASS -->
     <div class="detail-card">
       <h4>🧭 Wind Direction</h4>
       <div id="compassValue" class="big">--°</div>
       <div id="compassDir" class="label">Direction: --</div>
     </div>
 
-    <!-- AQI -->
     <div class="detail-card">
       <h4>🌫 Air Quality Index (PM2.5)</h4>
       <div id="aqiValue" class="big">--</div>
@@ -56,11 +55,9 @@
 
   </div>
 
-  <!-- HOURLY -->
   <h3>🕒 Next 24 Hours</h3>
   <div class="hourly" id="hourlyTemp"></div>
 
-  <!-- FORECAST -->
   <h3>📅 7-Day Forecast (Min / Max)</h3>
   <div class="forecast" id="forecast"></div>
 
