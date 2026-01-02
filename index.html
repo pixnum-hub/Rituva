@@ -12,51 +12,38 @@
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{
   margin:0;min-height:100vh;display:flex;justify-content:center;
-  padding:12px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
+  padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);
   transition:.3s;
 }
-body.dark{
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-}
+body.dark{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)}
 .app{
   width:100%;max-width:380px;min-height:100vh;
   padding:16px;border-radius:22px;
-  background:rgba(255,255,255,0.18);
+  background:rgba(255,255,255,.18);
   backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,0.35);
-  color:#000;
+  border:1px solid rgba(255,255,255,.35);
 }
-body.dark .app{background:rgba(0,0,0,0.35);color:#fff}
-
+body.dark .app{background:rgba(0,0,0,.35);color:#fff}
 input,button{
   width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:8px
 }
 button{background:rgba(255,255,255,.4);font-weight:bold;cursor:pointer}
-
 .details{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .detail-card{background:rgba(255,255,255,.25);border-radius:16px;padding:12px;text-align:center}
 .big{font-size:26px;font-weight:bold}
-
 .hourly,.forecast{display:flex;gap:10px;overflow-x:auto;padding:8px}
-.hour,.day{text-align:center;min-width:32px}
-.hour-bar,.day-bar-max,.day-bar-min{
-  border-radius:6px 6px 0 0;
-  animation:grow .6s ease-out
-}
+.hour,.day{text-align:center;min-width:34px}
+.hour-bar,.day-bar-max,.day-bar-min{border-radius:6px 6px 0 0;animation:grow .6s}
 @keyframes grow{from{height:0}}
-
 .loading{
   position:absolute;inset:0;display:none;
   align-items:center;justify-content:center;
-  background:rgba(255,255,255,.3);border-radius:22px
+  background:rgba(255,255,255,.35);border-radius:22px
 }
-
 .aqi-good{color:#00e676}
 .aqi-moderate{color:#ffeb3b}
 .aqi-poor{color:#ff9800}
 .aqi-severe{color:#f44336}
-
 @media(min-width:700px){
   .app{max-width:900px}
   .details{grid-template-columns:repeat(4,1fr)}
@@ -71,14 +58,14 @@ button{background:rgba(255,255,255,.4);font-weight:bold;cursor:pointer}
 
 <input id="cityInput" placeholder="Search city">
 <button onclick="searchCity()">Search</button>
-<button onclick="refreshLocation()">📍 Refresh Location</button>
+<button onclick="requestLocation()">📍 Use My Location</button>
 <button id="installBtn" style="display:none">📲 Install Rituva</button>
 
-<div id="favorites"></div>
+<div id="favorites" style="margin-bottom:6px"></div>
 
-<div class="loading" id="loading">Loading…</div>
+<div class="loading" id="loading">Detecting location…</div>
 
-<h3 id="location">Detecting location…</h3>
+<h3 id="location">Loading…</h3>
 <p id="accuracy" style="font-size:11px;opacity:.8">Accuracy: --</p>
 
 <div style="font-size:48px" id="icon">⛅</div>
@@ -121,7 +108,7 @@ button{background:rgba(255,255,255,.4);font-weight:bold;cursor:pointer}
 const icons={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",61:"🌧",71:"❄",95:"⛈"};
 const loading=document.getElementById("loading");
 
-/* ---------- helpers ---------- */
+/* ---------- utilities ---------- */
 function showLoading(v){loading.style.display=v?"flex":"none"}
 function compassDir(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 
@@ -135,11 +122,22 @@ document.addEventListener("dblclick",()=>{
   applyTheme(document.body.classList.contains("dark")?"light":"dark");
 });
 
+/* ---------- compass ---------- */
+if(window.DeviceOrientationEvent){
+  window.addEventListener("deviceorientation",e=>{
+    if(e.alpha!=null){
+      compassValue.textContent=Math.round(e.alpha)+"°";
+      compassDir.textContent=compassDir(e.alpha);
+    }
+  });
+}
+
 /* ---------- favorites ---------- */
 function favs(){return JSON.parse(localStorage.getItem("rituva_favs")||"[]")}
 function saveFavs(f){localStorage.setItem("rituva_favs",JSON.stringify(f))}
 function addFav(lat,lon,name){
-  const f=favs();if(!f.find(x=>x.name===name)){f.push({lat,lon,name});saveFavs(f)}
+  const f=favs();
+  if(!f.find(x=>x.name===name)){f.push({lat,lon,name});saveFavs(f)}
   renderFavs();
 }
 function renderFavs(){
@@ -147,30 +145,34 @@ function renderFavs(){
 }
 renderFavs();
 
-/* ---------- alerts ---------- */
-function showAlerts(w,pm){
-  const box=alertBox;box.style.display="none";
-  if(w.current_weather.temperature>=38){
-    box.textContent="🔥 Heat Alert";box.style.display="block";
-  } else if(pm>90){
-    box.textContent="🌫 AQI Severe";box.style.display="block";
-  } else if(w.current_weather.weathercode>=61){
-    box.textContent="🌧 Rain expected";box.style.display="block";
-  }
-}
-
 /* ---------- cache ---------- */
 function saveCache(d){localStorage.setItem("rituva_cache",JSON.stringify(d))}
 function loadCache(){try{return JSON.parse(localStorage.getItem("rituva_cache"))}catch{return null}}
+
+/* ---------- alerts ---------- */
+function showAlerts(w,pm){
+  alertBox.style.display="none";
+  if(w.current_weather.temperature>=38){
+    alertBox.textContent="🔥 Heat Alert";alertBox.style.display="block";
+  } else if(pm>90){
+    alertBox.textContent="🌫 AQI Severe";alertBox.style.display="block";
+  } else if(w.current_weather.weathercode>=61){
+    alertBox.textContent="🌧 Rain expected";alertBox.style.display="block";
+  }
+}
 
 /* ---------- weather ---------- */
 async function loadWeather(lat,lon,name){
 try{
 showLoading(true);
 
-const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,windgusts_10m,precipitation_probability&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`).then(r=>r.json());
+const w=await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,windgusts_10m,precipitation_probability&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
+).then(r=>r.json());
 
-const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+const a=await fetch(
+`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
+).then(r=>r.json());
 
 location.textContent=name;
 temp.textContent=w.current_weather.temperature+"°C";
@@ -189,15 +191,17 @@ showAlerts(w,pm);
 hourlyTemp.innerHTML="";
 w.hourly.temperature_2m.slice(0,24).forEach((t,i)=>{
   const rain=w.hourly.precipitation_probability[i]||0;
-  hourlyTemp.innerHTML+=`<div class="hour">
-    <div class="hour-bar" style="height:${20+t}px;background:rgba(255,255,255,.6)"></div>
+  hourlyTemp.innerHTML+=`
+  <div class="hour">
+    <div class="hour-bar" style="height:${20+t}px;background:#90caf9"></div>
     <div>${t}°</div><div>${rain}%</div>
   </div>`;
 });
 
 forecast.innerHTML="";
 w.daily.time.forEach((d,i)=>{
-  forecast.innerHTML+=`<div class="day">
+  forecast.innerHTML+=`
+  <div class="day">
     <div class="day-bar-max" style="height:${20+w.daily.temperature_2m_max[i]}px;background:#ff7043"></div>
     <div class="day-bar-min" style="height:${20+w.daily.temperature_2m_min[i]}px;background:#42a5f5"></div>
     <div>${icons[w.daily.weathercode[i]]||"⛅"}</div>
@@ -214,26 +218,37 @@ if(c){
   location.textContent=c.name+" (Offline)";
   temp.textContent=c.w.current_weather.temperature+"°C";
 }
-}else{showLoading(false)}
+}finally{showLoading(false)}
 }
 
-/* ---------- location ---------- */
+/* ---------- location (MOBILE SAFE) ---------- */
 async function getLocationName(lat,lon){
-const r=await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`).then(r=>r.json());
+const r=await fetch(
+`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`
+).then(r=>r.json());
 return r.results?`${r.results[0].name}, ${r.results[0].country}`:"Current Location";
 }
 
-function refreshLocation(){
-navigator.geolocation.getCurrentPosition(async p=>{
-accuracy.textContent="Accuracy ±"+Math.round(p.coords.accuracy)+"m";
-loadWeather(p.coords.latitude,p.coords.longitude,await getLocationName(p.coords.latitude,p.coords.longitude));
-});
+function requestLocation(){
+showLoading(true);
+navigator.geolocation.getCurrentPosition(
+async p=>{
+accuracy.textContent="Accuracy ±"+Math.round(p.coords.accuracy)+" m";
+loadWeather(p.coords.latitude,p.coords.longitude,
+await getLocationName(p.coords.latitude,p.coords.longitude));
+},
+()=>{showLoading(false);alert("Location unavailable");},
+{enableHighAccuracy:true,timeout:12000,maximumAge:60000}
+);
 }
 
-navigator.geolocation.getCurrentPosition(async p=>{
-accuracy.textContent="Accuracy ±"+Math.round(p.coords.accuracy)+"m";
-loadWeather(p.coords.latitude,p.coords.longitude,await getLocationName(p.coords.latitude,p.coords.longitude));
-},()=>loadWeather(28.61,77.23,"Delhi, India"));
+/* ---------- bootstrap (NO AUTO GPS) ---------- */
+const cached=loadCache();
+if(cached){
+  loadWeather(cached.lat,cached.lon,cached.name);
+}else{
+  loadWeather(28.61,77.23,"Delhi, India");
+}
 
 /* ---------- PWA ---------- */
 let dp;
