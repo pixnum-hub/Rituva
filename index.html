@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rituva</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="app">
+  <h1>🌦 Rituva</h1>
+
+  <input id="cityInput" placeholder="Search city">
+  <button onclick="searchCity()">Search</button>
+
+  <div class="current">
+    <h2 id="location"></h2>
+    <div id="icon" class="icon"></div>
+    <p id="temp"></p>
+    <p id="wind"></p>
+    <p id="pressure"></p>
+    <p id="aqi"></p>
+    <p id="compass">🧭 --°</p>
+    <p id="aiSummary"></p>
+  </div>
+
+  <canvas id="hourlyChart" height="120"></canvas>
+
+  <div class="forecast" id="forecast"></div>
+
+  <iframe
+    class="satellite"
+    loading="lazy"
+    src="https://openweathermap.org/weathermap?basemap=map&layer=clouds&cities=false">
+  </iframe>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
