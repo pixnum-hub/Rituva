@@ -11,6 +11,7 @@
 
 <body>
 <div class="app">
+
   <h1>🌦 Rituva</h1>
 
   <input id="cityInput" placeholder="Search city">
@@ -31,11 +32,11 @@
 
   <div class="forecast" id="forecast"></div>
 
-  <iframe
-    class="satellite"
-    loading="lazy"
-    src="https://openweathermap.org/weathermap?basemap=map&layer=clouds&cities=false">
-  </iframe>
+  <!-- ✅ COOKIE-FREE SATELLITE CLOUDS -->
+  <div class="satellite">
+    <img id="cloudMap" alt="Satellite cloud coverage">
+  </div>
+
 </div>
 
 <script src="app.js"></script>
