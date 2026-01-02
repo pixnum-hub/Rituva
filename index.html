@@ -14,6 +14,9 @@
 
   <h1>🌦 Rituva</h1>
 
+  <!-- INSTALL BUTTON -->
+  <button id="installBtn" hidden>⬇️ Install Rituva</button>
+
   <input id="cityInput" placeholder="Search city">
   <button onclick="searchCity()">Search</button>
 
@@ -26,7 +29,7 @@
     <p id="pressure"></p>
   </div>
 
-  <!-- DETAILS: COMPASS + AQI -->
+  <!-- DETAILS -->
   <div class="details">
 
     <!-- COMPASS -->
@@ -53,11 +56,11 @@
 
   </div>
 
-  <!-- 24 HOUR TEMPERATURE -->
-  <h3>🕒 Next 24 Hours Temperature</h3>
+  <!-- HOURLY -->
+  <h3>🕒 Next 24 Hours</h3>
   <div class="hourly" id="hourlyTemp"></div>
 
-  <!-- 7 DAY FORECAST -->
+  <!-- FORECAST -->
   <h3>📅 7-Day Forecast (Min / Max)</h3>
   <div class="forecast" id="forecast"></div>
 
