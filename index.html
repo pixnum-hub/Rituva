@@ -23,19 +23,23 @@
     <p id="temp"></p>
     <p id="wind"></p>
     <p id="pressure"></p>
-    <p id="aqi"></p>
     <p id="compass">🧭 --°</p>
-    <p id="aiSummary"></p>
   </div>
 
-  <canvas id="hourlyChart" height="120"></canvas>
+  <!-- ✅ VISUAL AQI PANEL -->
+  <div class="aqi-box">
+    <h3>🌫 Air Quality</h3>
+    <p id="aqiValue"></p>
+    <p id="aqiAdvice"></p>
+  </div>
 
+  <!-- ✅ 24 HOUR TEMPERATURE -->
+  <h3>🕒 Next 24 Hours</h3>
+  <div class="hourly" id="hourlyTemp"></div>
+
+  <!-- ✅ 7 DAY FORECAST -->
+  <h3>📅 7-Day Forecast</h3>
   <div class="forecast" id="forecast"></div>
-
-  <!-- ✅ COOKIE-FREE SATELLITE CLOUDS -->
-  <div class="satellite">
-    <img id="cloudMap" alt="Satellite cloud coverage">
-  </div>
 
 </div>
 
