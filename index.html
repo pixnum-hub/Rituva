@@ -12,33 +12,38 @@
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{
   margin:0;min-height:100vh;display:flex;justify-content:center;
-  padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);
+  padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)
 }
 .app{
   width:100%;max-width:380px;min-height:100vh;padding:16px;
   border-radius:22px;background:rgba(255,255,255,.18);
-  backdrop-filter:blur(16px);color:#000;
+  backdrop-filter:blur(16px);color:#000;position:relative
 }
 input,button{
-  width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px;
+  width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px
 }
 button{font-weight:bold;background:rgba(255,255,255,.35)}
 .icon{font-size:48px;text-align:center}
 .details{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .detail-card{
-  background:rgba(255,255,255,.25);border-radius:16px;padding:12px;text-align:center
+  background:rgba(255,255,255,.25);
+  border-radius:16px;padding:12px;text-align:center
 }
 .big{font-size:26px;font-weight:bold}
 .hourly,.forecast{
-  display:flex;gap:10px;overflow-x:auto;margin-top:10px;padding-bottom:8px
+  display:flex;gap:10px;overflow-x:auto;margin-top:10px;padding-bottom:6px
 }
 .hour,.day{display:flex;flex-direction:column;align-items:center}
-.hour-bar,.day-bar-max,.day-bar-min{width:22px;border-radius:6px 6px 0 0}
+.hour-bar,.day-bar-max,.day-bar-min{
+  width:22px;border-radius:6px 6px 0 0
+}
 .day-bar-container{display:flex;flex-direction:column-reverse;height:80px}
 .loading-overlay{
-  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.35);backdrop-filter:blur(8px);
-  font-size:18px;border-radius:22px
+  position:absolute;inset:0;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(255,255,255,.35);
+  backdrop-filter:blur(8px);
+  font-size:18px;border-radius:22px;z-index:10
 }
 @media(prefers-color-scheme:dark){
   body{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)}
@@ -68,7 +73,7 @@ button{font-weight:bold;background:rgba(255,255,255,.35)}
 
   <div class="details">
     <div class="detail-card">
-      <h4>🧭 Wind</h4>
+      <h4>🧭 Wind Dir</h4>
       <div id="windDir" class="big">--</div>
     </div>
     <div class="detail-card">
@@ -90,9 +95,9 @@ button{font-weight:bold;background:rgba(255,255,255,.35)}
 </div>
 
 <script>
-/* =========================
-   STABLE WEATHER CORE
-   ========================= */
+/* ===============================
+   CORE CONFIG
+   =============================== */
 
 const icons={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",61:"🌧",71:"❄",95:"⛈"};
 const loading=document.getElementById("loading");
@@ -104,18 +109,20 @@ function compass(d){
   return a[Math.round(d/45)%8];
 }
 
+/* ===============================
+   WEATHER LOADER (FIXED URL)
+   =============================== */
+
 async function loadWeather(lat,lon,name){
   try{
     showLoading(true);
 
-    const w=await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}
-      &current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m
-      &daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
+    const w = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
     ).then(r=>r.json());
 
-    const a=await fetch(
-      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`
+    const a = await fetch(
+      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
     ).then(r=>r.json());
 
     location.textContent=name;
@@ -137,13 +144,16 @@ async function loadWeather(lat,lon,name){
     localStorage.setItem("rituva_last",JSON.stringify({lat,lon,name}));
 
   }catch(e){
-    alert("Weather failed");
-  }finally{showLoading(false)}
+    console.error("WEATHER ERROR:",e);
+    alert("Weather API failed. Check internet / HTTPS.");
+  }finally{
+    showLoading(false);
+  }
 }
 
-/* =========================
-   LOCATION (MOBILE SAFE)
-   ========================= */
+/* ===============================
+   MOBILE-SAFE LOCATION
+   =============================== */
 
 function bootApp(){
   const c=JSON.parse(localStorage.getItem("rituva_last")||"null");
@@ -156,6 +166,7 @@ function useMyLocation(){
     alert("Location not supported");return;
   }
   showLoading(true);
+
   navigator.geolocation.getCurrentPosition(
     p=>{
       const lat=p.coords.latitude;
@@ -163,8 +174,12 @@ function useMyLocation(){
       loadWeather(lat,lon,"Current Location");
       reverseCity(lat,lon);
     },
-    ()=>{showLoading(false);alert("Enable location & retry")},
-    {enableHighAccuracy:true,timeout:15000}
+    err=>{
+      console.warn(err);
+      showLoading(false);
+      alert("Enable location permission & retry");
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
 
@@ -173,54 +188,71 @@ async function reverseCity(lat,lon){
     const r=await fetch(
       `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`
     ).then(r=>r.json());
+
     if(r.results?.[0]){
-      location.textContent=r.results[0].name+", "+r.results[0].country;
+      const n=r.results[0].name+", "+r.results[0].country;
+      location.textContent=n;
+      localStorage.setItem("rituva_last",JSON.stringify({lat,lon,name:n}));
     }
   }catch{}
 }
 
-/* ========================= */
+/* ===============================
+   UI BUILDERS
+   =============================== */
 
 function buildHourly(t){
   hourly.innerHTML="";
   const min=Math.min(...t),max=Math.max(...t),r=max-min||1;
   t.forEach(v=>{
     const h=30+((v-min)/r)*80;
-    hourly.innerHTML+=`<div class="hour">
-      <div class="hour-bar" style="height:${h}px;background:#4fc3f7"></div>
-      <small>${v}°</small></div>`;
+    hourly.innerHTML+=
+      `<div class="hour">
+        <div class="hour-bar" style="height:${h}px;background:#4fc3f7"></div>
+        <small>${v}°</small>
+      </div>`;
   });
 }
 
 function buildForecast(d){
   forecast.innerHTML="";
   d.time.forEach((x,i)=>{
-    forecast.innerHTML+=`<div class="day">
-      <div class="day-bar-container">
-        <div class="day-bar-max" style="height:60px;background:#ff7043"></div>
-        <div class="day-bar-min" style="height:40px;background:#42a5f5"></div>
-      </div>
-      <div>${icons[d.weathercode[i]]||"⛅"}</div>
-      <small>${x.slice(5)}</small>
-    </div>`;
+    forecast.innerHTML+=
+      `<div class="day">
+        <div class="day-bar-container">
+          <div class="day-bar-max" style="height:60px;background:#ff7043"></div>
+          <div class="day-bar-min" style="height:40px;background:#42a5f5"></div>
+        </div>
+        <div>${icons[d.weathercode[i]]||"⛅"}</div>
+        <small>${x.slice(5)}</small>
+      </div>`;
   });
 }
 
-/* ========================= */
+/* ===============================
+   SEARCH
+   =============================== */
 
 async function searchCity(){
   const q=cityInput.value.trim();
   if(!q) return;
   showLoading(true);
+
   const r=await fetch(
     `https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`
   ).then(r=>r.json());
+
   if(r.results?.[0]){
-    loadWeather(r.results[0].latitude,r.results[0].longitude,
-      r.results[0].name+", "+r.results[0].country);
+    loadWeather(
+      r.results[0].latitude,
+      r.results[0].longitude,
+      r.results[0].name+", "+r.results[0].country
+    );
   }
   showLoading(false);
 }
+
+/* =============================== */
 
 bootApp();
 </script>
