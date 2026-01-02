@@ -3,259 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva Weather</title>
+<title>Rituva</title>
 
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#667eea">
+<link rel="manifest" href="manifest.json">
 
 <style>
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{
   margin:0;min-height:100vh;display:flex;justify-content:center;
   padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);
-  transition:.3s;
 }
-body.dark{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)}
 .app{
-  width:100%;max-width:380px;min-height:100vh;
-  padding:16px;border-radius:22px;
-  background:rgba(255,255,255,.18);
-  backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,.35);
+  width:100%;max-width:380px;min-height:100vh;padding:16px;
+  border-radius:22px;background:rgba(255,255,255,.18);
+  backdrop-filter:blur(16px);color:#000;
 }
-body.dark .app{background:rgba(0,0,0,.35);color:#fff}
 input,button{
-  width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:8px
+  width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px;
 }
-button{background:rgba(255,255,255,.4);font-weight:bold;cursor:pointer}
+button{font-weight:bold;background:rgba(255,255,255,.35)}
+.icon{font-size:48px;text-align:center}
 .details{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.detail-card{background:rgba(255,255,255,.25);border-radius:16px;padding:12px;text-align:center}
-.big{font-size:26px;font-weight:bold}
-.hourly,.forecast{display:flex;gap:10px;overflow-x:auto;padding:8px}
-.hour,.day{text-align:center;min-width:34px}
-.hour-bar,.day-bar-max,.day-bar-min{border-radius:6px 6px 0 0;animation:grow .6s}
-@keyframes grow{from{height:0}}
-.loading{
-  position:absolute;inset:0;display:none;
-  align-items:center;justify-content:center;
-  background:rgba(255,255,255,.35);border-radius:22px
+.detail-card{
+  background:rgba(255,255,255,.25);border-radius:16px;padding:12px;text-align:center
 }
-.aqi-good{color:#00e676}
-.aqi-moderate{color:#ffeb3b}
-.aqi-poor{color:#ff9800}
-.aqi-severe{color:#f44336}
-@media(min-width:700px){
-  .app{max-width:900px}
-  .details{grid-template-columns:repeat(4,1fr)}
+.big{font-size:26px;font-weight:bold}
+.hourly,.forecast{
+  display:flex;gap:10px;overflow-x:auto;margin-top:10px;padding-bottom:8px
+}
+.hour,.day{display:flex;flex-direction:column;align-items:center}
+.hour-bar,.day-bar-max,.day-bar-min{width:22px;border-radius:6px 6px 0 0}
+.day-bar-container{display:flex;flex-direction:column-reverse;height:80px}
+.loading-overlay{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.35);backdrop-filter:blur(8px);
+  font-size:18px;border-radius:22px
+}
+@media(prefers-color-scheme:dark){
+  body{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)}
+  .app{background:rgba(0,0,0,.35);color:#fff}
 }
 </style>
 </head>
 
 <body>
 <div class="app">
+  <h1>🌦 Rituva</h1>
 
-<h2>🌦 Rituva</h2>
+  <input id="cityInput" placeholder="Search city">
+  <button onclick="searchCity()">Search</button>
+  <button onclick="useMyLocation()">📍 Use My Location</button>
 
-<input id="cityInput" placeholder="Search city">
-<button onclick="searchCity()">Search</button>
-<button onclick="requestLocation()">📍 Use My Location</button>
-<button id="installBtn" style="display:none">📲 Install Rituva</button>
+  <div class="loading-overlay" id="loading">Loading…</div>
 
-<div id="favorites" style="margin-bottom:6px"></div>
+  <h2 id="location">Loading weather…</h2>
+  <div id="icon" class="icon">⛅</div>
 
-<div class="loading" id="loading">Detecting location…</div>
+  <p id="temp">--°</p>
+  <p id="feels">Feels like --</p>
+  <p id="wind">Wind --</p>
+  <p id="humidity">Humidity --</p>
+  <p id="updated">Updated --</p>
 
-<h3 id="location">Loading…</h3>
-<p id="accuracy" style="font-size:11px;opacity:.8">Accuracy: --</p>
-
-<div style="font-size:48px" id="icon">⛅</div>
-<p id="temp">--°</p>
-<p id="feels">Feels like --</p>
-<p id="wind">Wind --</p>
-<p id="gust">Gust --</p>
-<p id="humidity">Humidity --</p>
-<p id="updated">Updated --</p>
-
-<div id="alertBox" style="display:none;padding:10px;border-radius:12px;margin:10px 0"></div>
-
-<div class="details">
-  <div class="detail-card">
-    <h4>🧭 Direction</h4>
-    <div id="compassValue" class="big">--°</div>
-    <div id="compassDir">--</div>
+  <div class="details">
+    <div class="detail-card">
+      <h4>🧭 Wind</h4>
+      <div id="windDir" class="big">--</div>
+    </div>
+    <div class="detail-card">
+      <h4>🌫 AQI (PM2.5)</h4>
+      <div id="aqiValue" class="big">--</div>
+      <div id="aqiLabel">--</div>
+    </div>
   </div>
-  <div class="detail-card" id="aqiCard">
-    <h4>🌫 AQI</h4>
-    <div id="aqiValue" class="big">--</div>
-    <div id="aqiLabel">--</div>
-    <div id="aqiAdvice"></div>
-  </div>
-</div>
 
-<h4>🕒 Next 24 Hours</h4>
-<div class="hourly" id="hourlyTemp"></div>
+  <h3>🕒 Next 24 Hours</h3>
+  <div class="hourly" id="hourly"></div>
 
-<h4>📅 7-Day Forecast</h4>
-<div class="forecast" id="forecast"></div>
+  <h3>📅 7-Day Forecast</h3>
+  <div class="forecast" id="forecast"></div>
 
-<footer style="font-size:11px;text-align:center;margin-top:14px">
-© Manik Roy 2025
-</footer>
-
+  <footer style="margin-top:20px;font-size:11px;text-align:center">
+    © Manik Roy 2025
+  </footer>
 </div>
 
 <script>
+/* =========================
+   STABLE WEATHER CORE
+   ========================= */
+
 const icons={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",61:"🌧",71:"❄",95:"⛈"};
 const loading=document.getElementById("loading");
 
-/* ---------- utilities ---------- */
 function showLoading(v){loading.style.display=v?"flex":"none"}
-function compassDir(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 
-/* ---------- theme memory ---------- */
-function applyTheme(t){
-  document.body.classList.toggle("dark",t==="dark");
-  localStorage.setItem("rituva_theme",t);
+function compass(d){
+  const a=["N","NE","E","SE","S","SW","W","NW"];
+  return a[Math.round(d/45)%8];
 }
-applyTheme(localStorage.getItem("rituva_theme"));
-document.addEventListener("dblclick",()=>{
-  applyTheme(document.body.classList.contains("dark")?"light":"dark");
-});
 
-/* ---------- compass ---------- */
-if(window.DeviceOrientationEvent){
-  window.addEventListener("deviceorientation",e=>{
-    if(e.alpha!=null){
-      compassValue.textContent=Math.round(e.alpha)+"°";
-      compassDir.textContent=compassDir(e.alpha);
+async function loadWeather(lat,lon,name){
+  try{
+    showLoading(true);
+
+    const w=await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}
+      &current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m
+      &daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
+    ).then(r=>r.json());
+
+    const a=await fetch(
+      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`
+    ).then(r=>r.json());
+
+    location.textContent=name;
+    temp.textContent=w.current_weather.temperature+"°C";
+    feels.textContent="Feels like "+w.hourly.apparent_temperature[0]+"°C";
+    wind.textContent="Wind "+w.current_weather.windspeed+" km/h";
+    humidity.textContent="Humidity "+w.hourly.relativehumidity_2m[0]+"%";
+    windDir.textContent=compass(w.current_weather.winddirection);
+    icon.textContent=icons[w.current_weather.weathercode]||"⛅";
+    updated.textContent="Updated "+new Date().toLocaleTimeString();
+
+    const pm=a.hourly.pm2_5[0];
+    aqiValue.textContent=pm;
+    aqiLabel.textContent=pm<=30?"Good":pm<=60?"Moderate":pm<=90?"Poor":"Severe";
+
+    buildHourly(w.hourly.temperature_2m.slice(0,24));
+    buildForecast(w.daily);
+
+    localStorage.setItem("rituva_last",JSON.stringify({lat,lon,name}));
+
+  }catch(e){
+    alert("Weather failed");
+  }finally{showLoading(false)}
+}
+
+/* =========================
+   LOCATION (MOBILE SAFE)
+   ========================= */
+
+function bootApp(){
+  const c=JSON.parse(localStorage.getItem("rituva_last")||"null");
+  if(c) loadWeather(c.lat,c.lon,c.name);
+  else loadWeather(28.61,77.23,"Delhi, India");
+}
+
+function useMyLocation(){
+  if(!navigator.geolocation){
+    alert("Location not supported");return;
+  }
+  showLoading(true);
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      const lat=p.coords.latitude;
+      const lon=p.coords.longitude;
+      loadWeather(lat,lon,"Current Location");
+      reverseCity(lat,lon);
+    },
+    ()=>{showLoading(false);alert("Enable location & retry")},
+    {enableHighAccuracy:true,timeout:15000}
+  );
+}
+
+async function reverseCity(lat,lon){
+  try{
+    const r=await fetch(
+      `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`
+    ).then(r=>r.json());
+    if(r.results?.[0]){
+      location.textContent=r.results[0].name+", "+r.results[0].country;
     }
+  }catch{}
+}
+
+/* ========================= */
+
+function buildHourly(t){
+  hourly.innerHTML="";
+  const min=Math.min(...t),max=Math.max(...t),r=max-min||1;
+  t.forEach(v=>{
+    const h=30+((v-min)/r)*80;
+    hourly.innerHTML+=`<div class="hour">
+      <div class="hour-bar" style="height:${h}px;background:#4fc3f7"></div>
+      <small>${v}°</small></div>`;
   });
 }
 
-/* ---------- favorites ---------- */
-function favs(){return JSON.parse(localStorage.getItem("rituva_favs")||"[]")}
-function saveFavs(f){localStorage.setItem("rituva_favs",JSON.stringify(f))}
-function addFav(lat,lon,name){
-  const f=favs();
-  if(!f.find(x=>x.name===name)){f.push({lat,lon,name});saveFavs(f)}
-  renderFavs();
+function buildForecast(d){
+  forecast.innerHTML="";
+  d.time.forEach((x,i)=>{
+    forecast.innerHTML+=`<div class="day">
+      <div class="day-bar-container">
+        <div class="day-bar-max" style="height:60px;background:#ff7043"></div>
+        <div class="day-bar-min" style="height:40px;background:#42a5f5"></div>
+      </div>
+      <div>${icons[d.weathercode[i]]||"⛅"}</div>
+      <small>${x.slice(5)}</small>
+    </div>`;
+  });
 }
-function renderFavs(){
-  favorites.innerHTML=favs().map(f=>`<button onclick="loadWeather(${f.lat},${f.lon},'${f.name}')">${f.name}</button>`).join(" ");
-}
-renderFavs();
 
-/* ---------- cache ---------- */
-function saveCache(d){localStorage.setItem("rituva_cache",JSON.stringify(d))}
-function loadCache(){try{return JSON.parse(localStorage.getItem("rituva_cache"))}catch{return null}}
+/* ========================= */
 
-/* ---------- alerts ---------- */
-function showAlerts(w,pm){
-  alertBox.style.display="none";
-  if(w.current_weather.temperature>=38){
-    alertBox.textContent="🔥 Heat Alert";alertBox.style.display="block";
-  } else if(pm>90){
-    alertBox.textContent="🌫 AQI Severe";alertBox.style.display="block";
-  } else if(w.current_weather.weathercode>=61){
-    alertBox.textContent="🌧 Rain expected";alertBox.style.display="block";
+async function searchCity(){
+  const q=cityInput.value.trim();
+  if(!q) return;
+  showLoading(true);
+  const r=await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`
+  ).then(r=>r.json());
+  if(r.results?.[0]){
+    loadWeather(r.results[0].latitude,r.results[0].longitude,
+      r.results[0].name+", "+r.results[0].country);
   }
+  showLoading(false);
 }
 
-/* ---------- weather ---------- */
-async function loadWeather(lat,lon,name){
-try{
-showLoading(true);
-
-const w=await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,windgusts_10m,precipitation_probability&daily=temperature_2m_min,temperature_2m_max,weathercode&timezone=auto`
-).then(r=>r.json());
-
-const a=await fetch(
-`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
-).then(r=>r.json());
-
-location.textContent=name;
-temp.textContent=w.current_weather.temperature+"°C";
-feels.textContent="Feels "+w.hourly.apparent_temperature[0]+"°C";
-wind.textContent="Wind "+w.current_weather.windspeed+" km/h";
-gust.textContent="Gust "+w.hourly.windgusts_10m[0]+" km/h";
-humidity.textContent="Humidity "+w.hourly.relativehumidity_2m[0]+"%";
-icon.textContent=icons[w.current_weather.weathercode]||"⛅";
-updated.textContent="Updated "+new Date().toLocaleTimeString();
-
-const pm=a.hourly.pm2_5[0];
-aqiValue.textContent=pm;
-aqiLabel.textContent=pm<=30?"Good":pm<=60?"Moderate":pm<=90?"Poor":"Severe";
-showAlerts(w,pm);
-
-hourlyTemp.innerHTML="";
-w.hourly.temperature_2m.slice(0,24).forEach((t,i)=>{
-  const rain=w.hourly.precipitation_probability[i]||0;
-  hourlyTemp.innerHTML+=`
-  <div class="hour">
-    <div class="hour-bar" style="height:${20+t}px;background:#90caf9"></div>
-    <div>${t}°</div><div>${rain}%</div>
-  </div>`;
-});
-
-forecast.innerHTML="";
-w.daily.time.forEach((d,i)=>{
-  forecast.innerHTML+=`
-  <div class="day">
-    <div class="day-bar-max" style="height:${20+w.daily.temperature_2m_max[i]}px;background:#ff7043"></div>
-    <div class="day-bar-min" style="height:${20+w.daily.temperature_2m_min[i]}px;background:#42a5f5"></div>
-    <div>${icons[w.daily.weathercode[i]]||"⛅"}</div>
-    <div>${d.slice(5)}</div>
-  </div>`;
-});
-
-saveCache({w,a,name,lat,lon});
-addFav(lat,lon,name);
-
-}catch{
-const c=loadCache();
-if(c){
-  location.textContent=c.name+" (Offline)";
-  temp.textContent=c.w.current_weather.temperature+"°C";
-}
-}finally{showLoading(false)}
-}
-
-/* ---------- location (MOBILE SAFE) ---------- */
-async function getLocationName(lat,lon){
-const r=await fetch(
-`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`
-).then(r=>r.json());
-return r.results?`${r.results[0].name}, ${r.results[0].country}`:"Current Location";
-}
-
-function requestLocation(){
-showLoading(true);
-navigator.geolocation.getCurrentPosition(
-async p=>{
-accuracy.textContent="Accuracy ±"+Math.round(p.coords.accuracy)+" m";
-loadWeather(p.coords.latitude,p.coords.longitude,
-await getLocationName(p.coords.latitude,p.coords.longitude));
-},
-()=>{showLoading(false);alert("Location unavailable");},
-{enableHighAccuracy:true,timeout:12000,maximumAge:60000}
-);
-}
-
-/* ---------- bootstrap (NO AUTO GPS) ---------- */
-const cached=loadCache();
-if(cached){
-  loadWeather(cached.lat,cached.lon,cached.name);
-}else{
-  loadWeather(28.61,77.23,"Delhi, India");
-}
-
-/* ---------- PWA ---------- */
-let dp;
-window.addEventListener("beforeinstallprompt",e=>{
-e.preventDefault();dp=e;installBtn.style.display="block";
-});
-installBtn.onclick=()=>{dp.prompt();dp=null};
+bootApp();
 </script>
 </body>
 </html>
