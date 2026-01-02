@@ -3,31 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva – Weather App</title>
+<title>Rituva – Smart Weather</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#667eea">
+
 <style>
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{
-  margin:0;display:flex;justify-content:center;align-items:flex-start;
-  font-family:system-ui,sans-serif;background:#667eea;color:#000;padding:12px;
+  margin:0;min-height:100vh;display:flex;justify-content:center;
+  align-items:flex-start;padding:12px;overflow:auto;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#000;transition:.3s;
+}
+body.dark{
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  color:#fff;
 }
 .app{
-  width:100%;max-width:380px;padding:16px;border-radius:22px;
-  background:rgba(255,255,255,0.2);display:flex;flex-direction:column;align-items:center;
+  width:100%;max-width:380px;min-height:100vh;
+  padding:16px;border-radius:22px;
+  backdrop-filter:blur(18px);
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,.35);
+  display:flex;flex-direction:column;
 }
-input,button{width:100%;padding:12px;margin-bottom:10px;border-radius:12px;border:none;text-align:center}
-.icon{font-size:48px;margin:12px 0}
+body.dark .app{background:rgba(0,0,0,.35)}
+input,button{
+  width:100%;padding:12px;border-radius:12px;
+  border:none;margin-bottom:10px;text-align:center;
+}
+button{background:rgba(255,255,255,.35);font-weight:bold}
+.icon{font-size:48px}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.detail-card{
+  background:rgba(255,255,255,.2);
+  border-radius:16px;padding:12px;text-align:center
+}
+body.dark .detail-card{background:rgba(0,0,0,.4)}
+.big{font-size:26px;font-weight:bold}
+.label{font-size:13px}
+.hint{font-size:12px;margin-top:6px}
+
+.hourly,.forecast{
+  display:flex;gap:10px;overflow-x:auto;
+  margin-top:12px;height:140px;padding:6px
+}
+.hour,.day{
+  min-width:36px;display:flex;
+  flex-direction:column;align-items:center;justify-content:flex-end
+}
+.hour-label,.day-label{font-size:11px}
+
+.day-bar-container{height:80px;width:16px;display:flex;flex-direction:column;justify-content:flex-end}
+.day-bar-min{background:rgba(0,150,255,.6)}
+.day-bar-max{background:rgba(255,80,50,.7)}
+
+.aqi-good{color:#00e676}
+.aqi-moderate{color:#ffeb3b}
+.aqi-poor{color:#ff9800}
+.aqi-severe{color:#ff5252}
+
+#installBtn{display:none}
+
+.loading-overlay{
+  position:absolute;inset:0;
+  background:rgba(255,255,255,.25);
+  backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;
+  border-radius:22px;font-size:18px
+}
+
+.footer{
+  margin-top:16px;font-size:11px;
+  opacity:.8;text-align:center
+}
 </style>
 </head>
-<body>
 
+<body>
 <div class="app">
-  <h1>🌦 Rituva</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h1>🌦 Rituva</h1>
+    <button id="darkToggle" style="width:42px;height:42px;border-radius:50%">🌓</button>
+  </div>
+
   <input id="cityInput" placeholder="Search city">
   <button onclick="searchCity()">Search</button>
+  <button id="installBtn">📲 Install Rituva</button>
 
-  <div id="location">Detecting location…</div>
-  <div id="icon">⛅</div>
-  <div id="temp">--°C</div>
-  <div id="wind">-- km/h</div>
+  <div class="loading-overlay" id="loading">Loading…</div>
+
+  <div class="current" style="text-align:center">
+    <h2 id="location">Detecting location…</h2>
+    <div id="icon" class="icon">⛅</div>
+    <p id="temp">--°</p>
+    <p id="wind">🌬 -- km/h</p>
+    <p id="pressure">📟 Pressure: -- hPa</p>
+  </div>
+
+  <div class="details">
+    <div class="detail-card">
+      <h4>🧭 Wind Direction</h4>
+      <div id="compassValue" class="big">--°</div>
+      <div id="compassDir" class="label">--</div>
+    </div>
+    <div class="detail-card" id="aqiCard">
+      <h4>🌫 AQI (PM2.5)</h4>
+      <div id="aqiValue" class="big">--</div>
+      <div id="aqiLabel" class="label">--</div>
+      <div id="aqiAdvice" class="hint">--</div>
+    </div>
+  </div>
+
+  <h3>🕒 Next 24 Hours</h3>
+  <div class="hourly" id="hourlyTemp"></div>
+
+  <h3>📅 7-Day Forecast</h3>
+  <div class="forecast" id="forecast"></div>
+
+  <footer class="footer">© Manik Roy 2025. All Rights Reserved.</footer>
 </div>
 
 <script>
@@ -57,35 +152,23 @@ async function loadWeather(lat, lon, name="Your Location"){
     const aRes = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`);
     const a = await aRes.json();
 
-    // Update basic weather
+    // Update weather
     document.getElementById("location").textContent = name;
-    document.getElementById("temp").textContent = "🌡 " + w.current_weather.temperature + "°C";
-    document.getElementById("wind").textContent = "🌬 " + w.current_weather.windspeed + " km/h";
+    document.getElementById("temp").textContent = "🌡 "+w.current_weather.temperature+"°C";
+    document.getElementById("wind").textContent = "🌬 "+w.current_weather.windspeed+" km/h";
     document.getElementById("icon").textContent = icons[w.current_weather.weathercode] || "⛅";
 
     // AQI
     let pm = a.hourly.pm2_5[0];
     let ai = aqiInfo(pm);
-    let aqiCard = document.getElementById("aqiCard");
-    if(!aqiCard){
-      aqiCard = document.createElement("div");
-      aqiCard.id="aqiCard";
-      aqiCard.style.cssText="margin-top:12px;text-align:center";
-      document.querySelector(".app").appendChild(aqiCard);
-    }
+    const aqiCard = document.getElementById("aqiCard");
     aqiCard.innerHTML = `<h4>🌫 AQI (PM2.5)</h4>
       <div>${pm} µg/m³</div>
       <div>${ai.label}</div>
       <div style="font-size:12px">${ai.advice}</div>`;
 
-    // HOURLY FORECAST
-    let hourlyDiv = document.getElementById("hourlyTemp");
-    if(!hourlyDiv){
-      hourlyDiv = document.createElement("div");
-      hourlyDiv.id="hourlyTemp";
-      hourlyDiv.style.cssText="display:flex;gap:4px;overflow-x:auto;margin-top:12px;width:100%";
-      document.querySelector(".app").appendChild(hourlyDiv);
-    }
+    // HOURLY
+    const hourlyDiv = document.getElementById("hourlyTemp");
     hourlyDiv.innerHTML="";
     const temps = w.hourly.temperature_2m.slice(0,24);
     const nowHour = new Date().getHours();
@@ -100,13 +183,7 @@ async function loadWeather(lat, lon, name="Your Location"){
     });
 
     // 7-DAY FORECAST
-    let forecastDiv = document.getElementById("forecast");
-    if(!forecastDiv){
-      forecastDiv = document.createElement("div");
-      forecastDiv.id="forecast";
-      forecastDiv.style.cssText="display:flex;gap:4px;overflow-x:auto;margin-top:12px;width:100%";
-      document.querySelector(".app").appendChild(forecastDiv);
-    }
+    const forecastDiv = document.getElementById("forecast");
     forecastDiv.innerHTML="";
     const minAll = Math.min(...w.daily.temperature_2m_min);
     const maxAll = Math.max(...w.daily.temperature_2m_max);
@@ -130,13 +207,7 @@ async function loadWeather(lat, lon, name="Your Location"){
       window.addEventListener("deviceorientation", e=>{
         if(e.alpha!=null){
           const deg = Math.round(e.alpha);
-          let compassDiv = document.getElementById("compassDiv");
-          if(!compassDiv){
-            compassDiv = document.createElement("div");
-            compassDiv.id="compassDiv";
-            compassDiv.style.cssText="margin-top:12px;text-align:center";
-            document.querySelector(".app").appendChild(compassDiv);
-          }
+          const compassDiv = document.getElementById("compassDiv");
           compassDiv.innerHTML = `<h4>🧭 Wind Direction</h4>
             <div>${deg}°</div>
             <div>${compassDirection(deg)}</div>`;
@@ -147,20 +218,23 @@ async function loadWeather(lat, lon, name="Your Location"){
   }catch(err){alert("Weather load failed"); console.error(err);}
 }
 
-// SAFE geolocation
+// Mobile + Desktop safe geolocation
 function detectLocation(){
-  document.getElementById("location").textContent = "Detecting location…";
-  if(!navigator.geolocation){
-    loadWeather(28.6139,77.2090,"Delhi, IN"); // fallback
-    return;
-  }
+  const locEl = document.getElementById("location");
+  locEl.textContent = "Detecting location…";
+
+  const fallback = ()=>loadWeather(28.6139,77.2090,"Delhi, IN");
+  if(!navigator.geolocation){ fallback(); return; }
+
+  let called = false;
+  const timer = setTimeout(()=>{
+    if(!called){ called = true; console.warn("Geolocation timeout"); fallback(); }
+  }, 10000); // 10s
+
   navigator.geolocation.getCurrentPosition(
-    pos => loadWeather(pos.coords.latitude, pos.coords.longitude,"Current Location"),
-    err => {
-      console.warn("Geolocation failed:", err.message);
-      loadWeather(28.6139,77.2090,"Delhi, IN"); // fallback
-    },
-    {timeout:5000} // 5 seconds
+    pos => { if(called) return; called = true; clearTimeout(timer); loadWeather(pos.coords.latitude,pos.coords.longitude,"Current Location"); },
+    err => { if(called) return; called = true; clearTimeout(timer); console.warn("Geolocation error:",err.message); fallback(); },
+    {timeout:10000, enableHighAccuracy:true}
   );
 }
 
