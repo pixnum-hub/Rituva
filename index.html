@@ -17,28 +17,48 @@
   <input id="cityInput" placeholder="Search city">
   <button onclick="searchCity()">Search</button>
 
+  <!-- CURRENT WEATHER -->
   <div class="current">
     <h2 id="location"></h2>
     <div id="icon" class="icon"></div>
     <p id="temp"></p>
     <p id="wind"></p>
     <p id="pressure"></p>
-    <p id="compass">🧭 --°</p>
   </div>
 
-  <!-- ✅ VISUAL AQI PANEL -->
-  <div class="aqi-box">
-    <h3>🌫 Air Quality</h3>
-    <p id="aqiValue"></p>
-    <p id="aqiAdvice"></p>
+  <!-- DETAILS: COMPASS + AQI -->
+  <div class="details">
+
+    <!-- COMPASS -->
+    <div class="detail-card">
+      <h4>🧭 Wind Direction</h4>
+      <div id="compassValue" class="big">--°</div>
+      <div id="compassDir" class="label">Direction: --</div>
+    </div>
+
+    <!-- AQI -->
+    <div class="detail-card">
+      <h4>🌫 Air Quality Index (PM2.5)</h4>
+      <div id="aqiValue" class="big">--</div>
+      <div id="aqiLabel" class="label">Category: --</div>
+      <div id="aqiAdvice" class="hint"></div>
+
+      <div class="aqi-scale">
+        <span class="good">Good</span>
+        <span class="moderate">Moderate</span>
+        <span class="poor">Poor</span>
+        <span class="severe">Severe</span>
+      </div>
+    </div>
+
   </div>
 
-  <!-- ✅ 24 HOUR TEMPERATURE -->
-  <h3>🕒 Next 24 Hours</h3>
+  <!-- 24 HOUR TEMPERATURE -->
+  <h3>🕒 Next 24 Hours Temperature</h3>
   <div class="hourly" id="hourlyTemp"></div>
 
-  <!-- ✅ 7 DAY FORECAST -->
-  <h3>📅 7-Day Forecast</h3>
+  <!-- 7 DAY FORECAST -->
+  <h3>📅 7-Day Forecast (Min / Max)</h3>
   <div class="forecast" id="forecast"></div>
 
 </div>

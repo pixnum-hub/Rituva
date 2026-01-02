@@ -4,12 +4,29 @@ const icons = {
   71:"❄",95:"⛈"
 };
 
+/* Compass direction name */
+function compassDirection(deg) {
+  const dirs = ["North","North-East","East","South-East","South","South-West","West","North-West"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
 /* AQI logic (India PM2.5) */
 function aqiInfo(pm) {
-  if (pm <= 30) return { label:"Good", cls:"aqi-good", advice:"Safe for all activities 🙂" };
+  if (pm <= 30) return { label:"Good", cls:"aqi-good", advice:"Safe for all outdoor activities" };
   if (pm <= 60) return { label:"Moderate", cls:"aqi-moderate", advice:"Sensitive people should reduce outdoor time" };
-  if (pm <= 90) return { label:"Poor", cls:"aqi-poor", advice:"Avoid long outdoor exposure 😷" };
-  return { label:"Severe", cls:"aqi-severe", advice:"Stay indoors, wear mask 🚫" };
+  if (pm <= 90) return { label:"Poor", cls:"aqi-poor", advice:"Avoid long outdoor exposure" };
+  return { label:"Severe", cls:"aqi-severe", advice:"Stay indoors, wear mask" };
+}
+
+/* Compass listener */
+if ("DeviceOrientationEvent" in window) {
+  window.addEventListener("deviceorientation", e => {
+    if (e.alpha !== null) {
+      const deg = Math.round(e.alpha);
+      compassValue.innerText = `${deg}°`;
+      compassDir.innerText = `Direction: ${compassDirection(deg)}`;
+    }
+  });
 }
 
 /* Load weather */
@@ -30,7 +47,7 @@ async function loadWeather(lat, lon, name, country) {
 
   const aqiData = await fetch(aqiURL).then(r=>r.json());
 
-  /* Current */
+  /* Current weather */
   location.innerText = `${name} ${country}`;
   temp.innerText = `🌡 ${data.current_weather.temperature}°C`;
   wind.innerText = `🌬 ${data.current_weather.windspeed} km/h`;
@@ -40,9 +57,11 @@ async function loadWeather(lat, lon, name, country) {
   /* AQI */
   const pm25 = aqiData.hourly.pm2_5[0];
   const aqi = aqiInfo(pm25);
-  aqiValue.className = aqi.cls;
-  aqiValue.innerText = `${aqi.label} (PM2.5: ${pm25} µg/m³)`;
-  aqiAdvice.innerText = aqi.advice;
+
+  aqiValue.className = `big ${aqi.cls}`;
+  aqiValue.innerText = `${pm25} µg/m³`;
+  aqiLabel.innerText = `Category: ${aqi.label}`;
+  aqiAdvice.innerText = `Health Impact: ${aqi.advice}`;
 
   /* 24 hour temperature */
   hourlyTemp.innerHTML = "";
@@ -54,7 +73,7 @@ async function loadWeather(lat, lon, name, country) {
       </div>`;
   });
 
-  /* 7 day min/max */
+  /* 7 day forecast */
   forecast.innerHTML = "";
   data.daily.time.forEach((d,i)=>{
     forecast.innerHTML += `
@@ -67,7 +86,7 @@ async function loadWeather(lat, lon, name, country) {
   });
 }
 
-/* Search */
+/* City search */
 async function searchCity() {
   const city = cityInput.value;
   if (!city) return;
