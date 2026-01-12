@@ -4,32 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
 *{box-sizing:border-box;font-family:system-ui}
-body{
-margin:0;min-height:100vh;display:flex;justify-content:center;
-padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)
-}
-.app{
-width:100%;max-width:380px;padding:16px;border-radius:22px;
-background:rgba(255,255,255,.18);backdrop-filter:blur(16px)
-}
-input,button{
-width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px
-}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)}
+.app{width:100%;max-width:380px;padding:16px;border-radius:22px;background:rgba(255,255,255,.18);backdrop-filter:blur(16px)}
+input,button{width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px}
 button{font-weight:bold;background:rgba(255,255,255,.35)}
 .icon{font-size:48px;text-align:center}
 .details{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.detail-card,.feature-card,.day-card{
-background:rgba(255,255,255,.25);
-border-radius:14px;padding:10px;text-align:center;font-size:13px
-}
+.detail-card,.feature-card,.day-card{background:rgba(255,255,255,.25);border-radius:14px;padding:10px;text-align:center;font-size:13px}
 .big{font-size:26px;font-weight:bold}
 .feature-title{font-weight:bold}
 .hourly{display:flex;gap:8px;overflow-x:auto}
@@ -39,40 +25,28 @@ border-radius:14px;padding:10px;text-align:center;font-size:13px
 .temp-bar{background:#ff7043}
 #map{height:260px;border-radius:16px}
 
-/* 🌙 DARK & OLED MODES */
+/* Dark/OLED modes */
 body.dark{background:#121212}
 body.oled{background:#000000}
 body.dark .app,body.oled .app{background:#000000}
-body.dark *,body.oled *{color:#ffffff}
-body.dark input,body.dark button,
-body.oled input,body.oled button{
-background:#1f1f1f;color:#ffffff
-}
-body.dark .detail-card,
-body.dark .feature-card,
-body.dark .day-card{background:#1c1c1c}
-body.oled .detail-card,
-body.oled .feature-card,
-body.oled .day-card{
-background:#000000;border:1px solid #222
-}
+body.dark *,body.oled *{color:#fff}
+body.dark input,body.dark button,body.oled input,body.oled button{background:#1f1f1f;color:#fff}
+body.dark .detail-card,.dark .feature-card,.dark .day-card{background:#1c1c1c}
+body.oled .detail-card,.oled .feature-card,.oled .day-card{background:#000;border:1px solid #222}
+body.oled #map{filter:brightness(0.8) grayscale(1);}
 </style>
 </head>
-
 <body>
 <div class="app">
-
 <h1>🌦 Rituva</h1>
 <button id="themeBtn">🌙 Dark Mode</button>
 <button id="installBtn" style="display:none">📲 Install App</button>
-
 <input id="cityInput" placeholder="Search city">
 <button id="searchBtn">Search</button>
 <button id="locBtn">📍 Use My Location</button>
 
 <h2 id="location">Loading…</h2>
 <div id="icon" class="icon">⛅</div>
-
 <p id="temp">--°</p>
 <p id="feels">Feels --</p>
 <p id="wind">Wind --</p>
@@ -105,20 +79,16 @@ background:#000000;border:1px solid #222
 <h3>🗺 Pollution Heatmap</h3>
 <div id="map"></div>
 
-<footer style="text-align:center;font-size:11px;margin-top:15px">
-© Manik Roy 2025
-</footer>
+<footer style="text-align:center;font-size:11px;margin-top:15px">© Manik Roy 2025</footer>
 </div>
 
-<!-- MAP LIBS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
 <script>
 const $=id=>document.getElementById(id);
 let alertSent=false;
 
-/* 🌗 THEME */
+/* Theme */
 let theme=localStorage.getItem("theme")||"light";
 applyTheme();
 $("themeBtn").onclick=()=>{
@@ -133,93 +103,43 @@ else if(theme==="oled"){document.body.classList.add("oled");$("themeBtn").textCo
 else{$("themeBtn").textContent="🌙 Dark Mode";}
 }
 
-/* UTIL */
+/* Utils */
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
 
 /* CPCB AQI */
 function calc(c,b){return Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2])}
 function aqiPM25(c){const t=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
-function aqiPM10(c){const t=[[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
+function aqiPM10(c){const t=[[0,50,0,50],[51,100,51,100],[101,250,101,150],[251,350,151,200],[351,430,201,300],[431,600,301,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
 function aqiNO2(c){const t=[[0,40,0,50],[41,80,51,100],[81,180,101,200],[181,280,201,300],[281,400,301,400],[401,1000,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
 function aqiSO2(c){const t=[[0,40,0,50],[41,80,51,100],[81,380,101,200],[381,800,201,300],[801,1600,301,400],[1601,2000,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
 
-/* AI */
-function maskAI(aqi){
-if(aqi<=50)return"No mask needed 🙂";
-if(aqi<=100)return"Cloth mask optional";
-if(aqi<=150)return"Wear N95 mask";
-if(aqi<=200)return"N95 mandatory";
-return"Double mask / Avoid outdoor";
-}
-function aiPredictAQI(arr){
-return Math.round(avg(arr)+(arr[arr.length-1]-arr[0])*0.6);
-}
+/* AI & Mask */
+function maskAI(aqi){if(aqi<=50)return"No mask needed 🙂";if(aqi<=100)return"Cloth mask optional";if(aqi<=150)return"Wear N95 mask";if(aqi<=200)return"N95 mandatory";return"Double mask / Avoid outdoor";}
+function aiPredictAQI(arr){return Math.round(avg(arr)+(arr[arr.length-1]-arr[0])*0.6);}
 
-/* GRAPHS */
-function buildAQIGraph(a){
-$("aqiGraph").innerHTML="";
-const m=Math.min(...a),x=Math.max(...a),r=x-m||1;
-a.forEach(v=>{
-$("aqiGraph").innerHTML+=`
-<div class="hour">
-<div class="hour-bar" style="height:${30+((v-m)/r)*80}px"></div>
-<small>${v}</small>
-</div>`;
-});
-}
-function buildTemp24H(t){
-$("temp24h").innerHTML="";
-const m=Math.min(...t),x=Math.max(...t),r=x-m||1;
-t.slice(0,24).forEach(v=>{
-$("temp24h").innerHTML+=`
-<div class="hour">
-<div class="temp-bar" style="height:${30+((v-m)/r)*80}px"></div>
-<small>${Math.round(v)}°</small>
-</div>`;
-});
-}
-function buildTemp7D(maxT,minT){
-$("temp7d").innerHTML="";
-for(let i=0;i<7;i++){
-$("temp7d").innerHTML+=`
-<div class="day-card">
-<b>Day ${i+1}</b><br>
-🌡 ${Math.round(maxT[i])}° / ${Math.round(minT[i])}°
-</div>`;
-}
-}
+/* Graphs */
+function buildAQIGraph(a){$("aqiGraph").innerHTML="";const m=Math.min(...a),x=Math.max(...a),r=x-m||1;a.forEach(v=>{$("aqiGraph").innerHTML+=`<div class="hour"><div class="hour-bar" style="height:${30+((v-m)/r)*80}px"></div><small>${v}</small></div>`});}
+function buildTemp24H(t){$("temp24h").innerHTML="";const m=Math.min(...t),x=Math.max(...t),r=x-m||1;t.slice(0,24).forEach(v=>{$("temp24h").innerHTML+=`<div class="hour"><div class="temp-bar" style="height:${30+((v-m)/r)*80}px"></div><small>${Math.round(v)}°</small></div>`});}
+function buildTemp7D(maxT,minT){$("temp7d").innerHTML="";for(let i=0;i<7;i++){$("temp7d").innerHTML+=`<div class="day-card"><b>Day ${i+1}</b><br>🌡 ${Math.round(maxT[i])}° / ${Math.round(minT[i])}°</div>`;}}
 
-/* 🔥 REAL HEATMAP */
+/* Real Heatmap */
 let map,heatLayer;
 function initMap(lat,lon,aqi){
-if(!map){
-map=L.map("map").setView([lat,lon],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-setTimeout(()=>map.invalidateSize(),200);
-}
+if(!map){map=L.map("map").setView([lat,lon],11);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);setTimeout(()=>map.invalidateSize(),200);}
 const intensity=aqi<=50?0.2:aqi<=100?0.4:aqi<=150?0.6:aqi<=200?0.8:1.0;
 const points=[
-[lat,lon,intensity],
-[lat+0.02,lon+0.02,intensity*0.8],
-[lat-0.02,lon-0.02,intensity*0.7],
-[lat+0.03,lon-0.01,intensity*0.6],
-[lat-0.01,lon+0.03,intensity*0.5]
+[lat,lon,intensity],[lat+0.02,lon+0.02,intensity*0.8],[lat-0.02,lon-0.02,intensity*0.7],[lat+0.03,lon-0.01,intensity*0.6],[lat-0.01,lon+0.03,intensity*0.5]
 ];
 if(heatLayer)map.removeLayer(heatLayer);
 heatLayer=L.heatLayer(points,{radius:40,blur:25,maxZoom:12}).addTo(map);
 }
 
-/* ALERT */
+/* Alerts */
 if("Notification"in window)Notification.requestPermission();
-function sendAlert(aqi){
-if(aqi>150&&!alertSent){
-alertSent=true;
-new Notification("⚠ Pollution Alert",{body:"Air quality unhealthy. Avoid outdoor activity."});
-}
-}
+function sendAlert(aqi){if(aqi>150&&!alertSent){alertSent=true;new Notification("⚠ Pollution Alert",{body:"Air quality unhealthy. Avoid outdoor activity."});}}
 
-/* MAIN */
+/* Main */
 async function loadWeather(lat,lon,name){
 const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`).then(r=>r.json());
 const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide&timezone=auto`).then(r=>r.json());
@@ -265,7 +185,7 @@ $("aqiFeatures").innerHTML=`
 `;
 }
 
-/* SEARCH & LOCATION */
+/* Search & location */
 $("searchBtn").onclick=async()=>{
 const q=$("cityInput").value.trim();
 if(!q)return;
@@ -273,19 +193,16 @@ const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&co
 loadWeather(r.results[0].latitude,r.results[0].longitude,r.results[0].name);
 };
 $("locBtn").onclick=()=>{
-navigator.geolocation.getCurrentPosition(p=>
-loadWeather(p.coords.latitude,p.coords.longitude,"Current Location"));
+navigator.geolocation.getCurrentPosition(p=>loadWeather(p.coords.latitude,p.coords.longitude,"Current Location"));
 };
 
-/* BOOT */
+/* Boot */
 loadWeather(28.61,77.23,"Delhi, India");
 
 /* PWA */
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
 let dp;
-window.addEventListener("beforeinstallprompt",e=>{
-e.preventDefault();dp=e;$("installBtn").style.display="block";
-});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;$("installBtn").style.display="block";});
 $("installBtn").onclick=()=>dp.prompt();
 </script>
 </body>
