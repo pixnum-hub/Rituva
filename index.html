@@ -7,6 +7,7 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
@@ -38,24 +39,18 @@ border-radius:14px;padding:10px;text-align:center;font-size:13px
 .temp-bar{background:#ff7043}
 #map{height:260px;border-radius:16px}
 
-/* 🌙 DARK MODE */
+/* 🌙 DARK & OLED MODES */
 body.dark{background:#121212}
 body.oled{background:#000000}
-
-body.dark .app,
-body.oled .app{background:#000000}
-
+body.dark .app,body.oled .app{background:#000000}
 body.dark *,body.oled *{color:#ffffff}
-
 body.dark input,body.dark button,
 body.oled input,body.oled button{
 background:#1f1f1f;color:#ffffff
 }
-
 body.dark .detail-card,
 body.dark .feature-card,
 body.dark .day-card{background:#1c1c1c}
-
 body.oled .detail-card,
 body.oled .feature-card,
 body.oled .day-card{
@@ -115,7 +110,9 @@ background:#000000;border:1px solid #222
 </footer>
 </div>
 
+<!-- MAP LIBS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -140,7 +137,7 @@ else{$("themeBtn").textContent="🌙 Dark Mode";}
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
 
-/* AQI CPCB */
+/* CPCB AQI */
 function calc(c,b){return Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2])}
 function aqiPM25(c){const t=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
 function aqiPM10(c){const t=[[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]];for(let i of t)if(c<=i[1])return calc(c,i)}
@@ -193,17 +190,24 @@ $("temp7d").innerHTML+=`
 }
 }
 
-/* MAP */
-let map,layer;
+/* 🔥 REAL HEATMAP */
+let map,heatLayer;
 function initMap(lat,lon,aqi){
 if(!map){
-map=L.map("map").setView([lat,lon],10);
+map=L.map("map").setView([lat,lon],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 setTimeout(()=>map.invalidateSize(),200);
 }
-const col=aqi<=50?"#2ecc71":aqi<=100?"#f1c40f":aqi<=150?"#e67e22":aqi<=200?"#e74c3c":"#8e44ad";
-if(layer)map.removeLayer(layer);
-layer=L.circle([lat,lon],{radius:12000,color:col,fillColor:col,fillOpacity:.35}).addTo(map);
+const intensity=aqi<=50?0.2:aqi<=100?0.4:aqi<=150?0.6:aqi<=200?0.8:1.0;
+const points=[
+[lat,lon,intensity],
+[lat+0.02,lon+0.02,intensity*0.8],
+[lat-0.02,lon-0.02,intensity*0.7],
+[lat+0.03,lon-0.01,intensity*0.6],
+[lat-0.01,lon+0.03,intensity*0.5]
+];
+if(heatLayer)map.removeLayer(heatLayer);
+heatLayer=L.heatLayer(points,{radius:40,blur:25,maxZoom:12}).addTo(map);
 }
 
 /* ALERT */
@@ -227,7 +231,6 @@ $("wind").textContent="Wind "+w.current_weather.windspeed+" km/h";
 $("humidity").textContent="Humidity "+w.hourly.relativehumidity_2m[0]+"%";
 $("windDir").textContent=compass(w.current_weather.winddirection);
 
-/* AQI */
 const CURRENT=Math.max(
 aqiPM25(avg(a.hourly.pm2_5.slice(0,24))),
 aqiPM10(avg(a.hourly.pm10.slice(0,24))),
