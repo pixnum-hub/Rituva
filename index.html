@@ -120,18 +120,20 @@ else if(theme==="oled"){document.body.classList.add("oled");$("themeBtn").textCo
 else{$("themeBtn").textContent="🌙 Dark";}
 }
 
-/* AQI CPCB */
+/* CPCB AQI */
 const calc=(c,b)=>Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2]);
 const PM25=c=>{for(let i of [[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]])if(c<=i[1])return calc(c,i)};
 const PM10=c=>{for(let i of [[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]])if(c<=i[1])return calc(c,i)};
 
+/* LAST 24 HOURS (ACCURATE) */
+function last24(arr){ return arr.slice(-24); }
+function hourLabel(i){ const d=new Date(); d.setHours(d.getHours()-23+i); return d.getHours() + ":00"; }
+
 /* MAP */
 let map,heat;
 function drawMap(lat,lon,aqi){
-if(!map){
-map=L.map("map").setView([lat,lon],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-}else map.setView([lat,lon],11);
+if(!map){ map=L.map("map").setView([lat,lon],11); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);}
+else map.setView([lat,lon],11);
 if(heat)map.removeLayer(heat);
 const i=aqi<=50?.2:aqi<=100?.4:aqi<=150?.6:aqi<=200?.8:1;
 heat=L.heatLayer([[lat,lon,i],[lat+.02,lon+.02,i*.8],[lat-.02,lon-.02,i*.7]],{radius:40,blur:25}).addTo(map);
@@ -140,36 +142,25 @@ heat=L.heatLayer([[lat,lon,i],[lat+.02,lon+.02,i*.8],[lat-.02,lon-.02,i*.7]],{ra
 /* RENDER GRAPHS */
 function renderAQI24H(pm25,pm10){
 $("aqiGraph").innerHTML="";
-for(let i=0;i<24;i++){
-const aqi=Math.max(PM25(pm25[i]),PM10(pm10[i]));
-$("aqiGraph").innerHTML+=`
-<div class="hour">
-<div class="bar aqi" style="height:${aqi/5}px"></div>
-<small>${i}h</small>
-</div>`;
-}
+pm25.forEach((v,i)=>{
+const aqi=Math.max(PM25(v),PM10(pm10[i]));
+const h=Math.max(8,(aqi/500)*120);
+$("aqiGraph").innerHTML+=`<div class="hour"><div class="bar aqi" style="height:${h}px"></div><small>${hourLabel(i)}</small></div>`;
+});
 }
 function renderTemp24H(t){
 $("tempGraph").innerHTML="";
-for(let i=0;i<24;i++){
-$("tempGraph").innerHTML+=`
-<div class="hour">
-<div class="bar temp" style="height:${t[i]*2}px"></div>
-<small>${t[i]}°</small>
-</div>`;
-}
+t.forEach((v,i)=>{
+const h=Math.max(8,(v/50)*120);
+$("tempGraph").innerHTML+=`<div class="hour"><div class="bar temp" style="height:${h}px"></div><small>${hourLabel(i)}</small></div>`;
+});
 }
 function render7Day(max,min){
 $("temp7d").innerHTML="";
-for(let i=0;i<max.length;i++){
-$("temp7d").innerHTML+=`
-<div class="card">
-Day ${i+1}<br><b>${max[i]}° / ${min[i]}°</b>
-</div>`;
-}
+max.forEach((v,i)=>{$("temp7d").innerHTML+=`<div class="card">Day ${i+1}<br><b>${v}° / ${min[i]}°</b></div>`;});
 }
 
-/* LOAD */
+/* LOAD DATA */
 async function load(lat,lon,name){
 $("location").textContent=name;
 
@@ -179,18 +170,19 @@ const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latit
 $("temp").textContent=w.current_weather.temperature+"°C";
 $("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
 
-const aqi=Math.max(
-PM25(avg(a.hourly.pm2_5.slice(0,24))),
-PM10(avg(a.hourly.pm10.slice(0,24)))
-);
+const pm25_24=last24(a.hourly.pm2_5);
+const pm10_24=last24(a.hourly.pm10);
+const temp_24=last24(w.hourly.temperature_2m);
 
+const aqi=Math.max(PM25(avg(pm25_24)),PM10(avg(pm10_24)));
 $("aqiValue").textContent=aqi;
 $("aqiLabel").textContent=aqi<=50?"Good":aqi<=100?"Satisfactory":aqi<=200?"Moderate":aqi<=300?"Poor":"Severe";
 
-renderAQI24H(a.hourly.pm2_5,a.hourly.pm10);
-renderTemp24H(w.hourly.temperature_2m);
+renderAQI24H(pm25_24,pm10_24);
+renderTemp24H(temp_24);
 render7Day(w.daily.temperature_2m_max,w.daily.temperature_2m_min);
 
+/* AQI INSIGHTS */
 $("aqiInsights").innerHTML=`
 <div class="card">Category<br><b>${$("aqiLabel").textContent}</b></div>
 <div class="card">Dominant Pollutant<br><b>PM2.5</b></div>
@@ -200,10 +192,11 @@ $("aqiInsights").innerHTML=`
 <div class="card">Children<br><b>${aqi<=100?"Normal":"Avoid Outdoor"}</b></div>
 <div class="card">Elderly<br><b>${aqi<=100?"Safe":"Stay Indoors"}</b></div>
 <div class="card">Sensitive Groups<br><b>${aqi<=100?"Low":"High Risk"}</b></div>
-<div class="card">Trend<br><b>24h Average</b></div>
+<div class="card">Trend<br><b>Last 24 Hours</b></div>
 <div class="card">Standard<br><b>CPCB</b></div>
 `;
 
+/* LOCATION DETAILS */
 $("locationDetails").innerHTML=`
 <div class="card">Latitude<br><b>${lat.toFixed(4)}</b></div>
 <div class="card">Longitude<br><b>${lon.toFixed(4)}</b></div>
@@ -220,6 +213,7 @@ $("locationDetails").innerHTML=`
 drawMap(lat,lon,aqi);
 }
 
+/* SEARCH & LOCATION */
 async function searchCity(){
 const q=$("cityInput").value.trim();
 if(!q)return;
