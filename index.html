@@ -125,7 +125,7 @@ const calc=(c,b)=>Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2]);
 const PM25=c=>{for(let i of [[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]])if(c<=i[1])return calc(c,i)};
 const PM10=c=>{for(let i of [[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]])if(c<=i[1])return calc(c,i)};
 
-/* LAST 24 HOURS (ACCURATE) */
+/* LAST 24 HOURS */
 function last24(arr){ return arr.slice(-24); }
 function hourLabel(i){ const d=new Date(); d.setHours(d.getHours()-23+i); return d.getHours() + ":00"; }
 
@@ -224,7 +224,8 @@ function useLocation(){
 navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"));
 }
 
-load(28.61,77.23,"Delhi, India");
+/* DEFAULT: KOLKATA */
+load(22.5726,88.3639,"Kolkata, India");
 
 /* PWA */
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
