@@ -1,4 +1,4 @@
-const CACHE="rituva-v1";
+const CACHE="rituva-v3";
 
 self.addEventListener("install",e=>{
 e.waitUntil(
