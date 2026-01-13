@@ -1,20 +1,18 @@
-const CACHE_NAME = "rituva-cache-v1";
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
-];
+const CACHE="rituva-v1";
 
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+self.addEventListener("install",e=>{
+e.waitUntil(
+caches.open(CACHE).then(c=>c.addAll([
+"./",
+"./index.html",
+"./manifest.json"
+]))
+);
+self.skipWaiting();
 });
 
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(response => response || fetch(e.request))
-  );
+self.addEventListener("fetch",e=>{
+e.respondWith(
+caches.match(e.request).then(r=>r||fetch(e.request))
+);
 });
