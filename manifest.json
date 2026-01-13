@@ -1,22 +1,14 @@
 {
-  "name": "Rituva – Weather & AQI Intelligence",
+  "name": "Rituva Weather & AQI Intelligence",
   "short_name": "Rituva",
-  "description": "Real-time weather, AQI, UV, elevation and pollution intelligence with 7-day forecast, 24h graphs, and global location support.",
-  "start_url": "./index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
+  "scope": "/",
   "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
   ]
 }
