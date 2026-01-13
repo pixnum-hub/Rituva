@@ -1,189 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Rituva – AQI & Weather</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rituva</title>
 
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#000000" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-  }
-  :root {
-    --bg: #ffffff;
-    --text: #000000;
-  }
-  body.dark {
-    --bg: #121212;
-    --text: #ffffff;
-  }
-  body.oled {
-    --bg: #000000;
-    --text: #ffffff;
-  }
-  header {
-    padding: 10px;
-    display: flex;
-    gap: 5px;
-  }
-  input, button {
-    padding: 6px;
-    font-size: 14px;
-  }
-  #map {
-    height: 350px;
-    width: 100%;
-  }
-  .card {
-    padding: 10px;
-    margin: 8px;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.05);
-  }
-  body.dark .card,
-  body.oled .card {
-    background: rgba(255,255,255,0.08);
-  }
-  footer {
-    text-align: center;
-    font-size: 11px;
-    margin: 15px 0;
-    opacity: 0.7;
-  }
+*{box-sizing:border-box;font-family:system-ui}
+body{
+margin:0;min-height:100vh;display:flex;justify-content:center;
+padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)
+}
+.app{
+width:100%;max-width:380px;padding:16px;border-radius:22px;
+background:rgba(255,255,255,.18);backdrop-filter:blur(16px)
+}
+input,button{
+width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px
+}
+button{font-weight:bold;background:rgba(255,255,255,.35)}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{
+background:rgba(255,255,255,.25);
+border-radius:14px;padding:10px;text-align:center;font-size:13px
+}
+.big{font-size:26px;font-weight:bold}
+.hourly{display:flex;gap:8px;overflow-x:auto}
+.hour{display:flex;flex-direction:column;align-items:center}
+.bar{width:18px;border-radius:6px 6px 0 0}
+.bar.aqi{background:#43a047}
+.bar.temp{background:#ff7043}
+#map{height:260px;border-radius:16px}
+
+/* 🌙 DARK & OLED */
+body.dark{background:#121212}
+body.oled{background:#000000}
+body.dark .app,body.oled .app{background:#000}
+body.dark *,body.oled *{color:#fff}
+body.dark input,body.dark button,
+body.oled input,body.oled button{background:#1f1f1f;color:#fff}
+body.oled #map{filter:grayscale(1) brightness(.8)}
 </style>
 </head>
 
 <body>
-<header>
-  <input id="cityInput" placeholder="Search city" />
-  <button onclick="searchCity()">Search</button>
-  <button onclick="toggleTheme()">Theme</button>
-</header>
+<div class="app">
 
+<h1>🌦 Rituva</h1>
+<button id="themeBtn">🌙 Dark Mode</button>
+<button id="installBtn" hidden>📲 Install App</button>
+
+<input id="cityInput" placeholder="Search city">
+<button onclick="searchCity()">Search</button>
+<button onclick="useLocation()">📍 Use My Location</button>
+
+<h2 id="location">Loading…</h2>
+<p id="temp">--°C</p>
+
+<div class="details">
+<div class="card">
+<h4>AQI</h4>
+<div id="aqiValue" class="big">--</div>
+<div id="aqiLabel">--</div>
+</div>
+<div class="card">
+<h4>Wind</h4>
+<div id="wind">--</div>
+</div>
+</div>
+
+<h3>🌫 AQI Insights</h3>
+<div class="details" id="aqiInsights"></div>
+
+<h3>📈 AQI (24H)</h3>
+<div class="hourly" id="aqiGraph"></div>
+
+<h3>🌡 Temperature (24H)</h3>
+<div class="hourly" id="tempGraph"></div>
+
+<h3>📅 7-Day Forecast</h3>
+<div class="details" id="temp7d"></div>
+
+<h3>🗺 Pollution Heatmap</h3>
 <div id="map"></div>
 
-<div class="card" id="aqiCard">AQI: --</div>
-<div class="card" id="aqiInsight">AQI Insights loading…</div>
+<footer style="text-align:center;font-size:11px;margin-top:15px">
+© Manik Roy 2025
+</footer>
+</div>
 
-<footer>© Manik Roy 2025. All Rights Reserved.</footer>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
-let map = null;
-let heatLayer = null;
-let themeIndex = 0;
-const themes = ["", "dark", "oled"];
+/* ---------- UTIL ---------- */
+const $=id=>document.getElementById(id);
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const compass=d=>["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8];
 
-function toggleTheme() {
-  themeIndex = (themeIndex + 1) % themes.length;
-  document.body.className = themes[themeIndex];
-  localStorage.setItem("theme", themes[themeIndex]);
+/* ---------- THEME ---------- */
+let theme=localStorage.getItem("theme")||"light";
+applyTheme();
+$("themeBtn").onclick=()=>{
+theme=theme==="light"?"dark":theme==="dark"?"oled":"light";
+localStorage.setItem("theme",theme);
+applyTheme();
+};
+function applyTheme(){
+document.body.classList.remove("dark","oled");
+if(theme==="dark"){document.body.classList.add("dark");$("themeBtn").textContent="🖤 OLED";}
+else if(theme==="oled"){document.body.classList.add("oled");$("themeBtn").textContent="☀ Light";}
+else{$("themeBtn").textContent="🌙 Dark";}
 }
 
-document.body.className = localStorage.getItem("theme") || "";
+/* ---------- AQI (CPCB) ---------- */
+const calc=(c,b)=>Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2]);
+const PM25=c=>{for(let i of [[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]])if(c<=i[1])return calc(c,i)};
+const PM10=c=>{for(let i of [[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]])if(c<=i[1])return calc(c,i)};
 
-async function fetchAQI(lat, lon) {
-  const url =
-    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,no2,so2&timezone=auto`;
-  const res = await fetch(url);
-  const data = await res.json();
+/* ---------- MAP ---------- */
+let map,heat;
+function drawMap(lat,lon,aqi){
+if(!map){
+map=L.map("map").setView([lat,lon],11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+}else map.setView([lat,lon],11);
 
-  const pm25 = data.hourly.pm2_5.slice(-24);
-  const avgPM25 = pm25.reduce((a, b) => a + b, 0) / pm25.length;
+if(heat)map.removeLayer(heat);
 
-  return Math.round(avgPM25 * 2); // CPCB-like approximation
+const i=aqi<=50?.2:aqi<=100?.4:aqi<=150?.6:aqi<=200?.8:1;
+heat=L.heatLayer([
+[lat,lon,i],
+[lat+.02,lon+.02,i*.8],
+[lat-.02,lon-.02,i*.7]
+],{radius:40,blur:25}).addTo(map);
 }
 
-function drawMap(lat, lon, aqi) {
-  if (!map) {
-    map = L.map("map");
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap"
-    }).addTo(map);
-  }
+/* ---------- LOAD DATA ---------- */
+async function load(lat,lon,name){
+$("location").textContent=name;
 
-  map.setView([lat, lon], 11);
-  map.invalidateSize(true);
+const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`).then(r=>r.json());
+const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
 
-  if (heatLayer) {
-    map.removeLayer(heatLayer);
-    heatLayer = null;
-  }
+$("temp").textContent=w.current_weather.temperature+"°C";
+$("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
 
-  const intensity =
-    aqi <= 50 ? 0.3 :
-    aqi <= 100 ? 0.5 :
-    aqi <= 150 ? 0.7 :
-    aqi <= 200 ? 0.85 : 1.0;
+const aqi=Math.max(
+PM25(avg(a.hourly.pm2_5.slice(0,24))),
+PM10(avg(a.hourly.pm10.slice(0,24)))
+);
 
-  const spread = 0.05;
-  const points = [];
+$("aqiValue").textContent=aqi;
+$("aqiLabel").textContent=aqi<=50?"Good":aqi<=100?"Satisfactory":aqi<=200?"Moderate":aqi<=300?"Poor":"Severe";
 
-  for (let x = -2; x <= 2; x++) {
-    for (let y = -2; y <= 2; y++) {
-      const d = Math.abs(x) + Math.abs(y);
-      points.push([
-        lat + x * spread / 4,
-        lon + y * spread / 4,
-        Math.max(0.2, intensity - d * 0.12)
-      ]);
-    }
-  }
+$("aqiInsights").innerHTML=`
+<div class="card">Mask: ${aqi<=100?"Optional":"N95 Recommended"}</div>
+<div class="card">Standard: CPCB</div>
+`;
 
-  heatLayer = L.heatLayer(points, {
-    radius: 50,
-    blur: 35,
-    minOpacity: 0.45,
-    maxZoom: 13
-  }).addTo(map);
+$("aqiGraph").innerHTML="";
+for(let i=0;i<24;i++){
+const v=PM25(avg(a.hourly.pm2_5.slice(i,i+24)));
+$("aqiGraph").innerHTML+=`<div class="hour"><div class="bar aqi" style="height:${30+v/5}px"></div><small>${v}</small></div>`;
 }
 
-async function loadLocation(lat, lon, label) {
-  const aqi = await fetchAQI(lat, lon);
-  document.getElementById("aqiCard").innerText = `AQI (${label}): ${aqi}`;
-
-  document.getElementById("aqiInsight").innerText =
-    aqi <= 50 ? "Good – No mask needed" :
-    aqi <= 100 ? "Moderate – Sensitive people take care" :
-    aqi <= 200 ? "Poor – Mask recommended" :
-    "Very Poor – Avoid outdoor activity";
-
-  drawMap(lat, lon, aqi);
-}
-
-async function searchCity() {
-  const city = document.getElementById("cityInput").value;
-  if (!city) return;
-
-  const res = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`
-  );
-  const data = await res.json();
-  if (!data.results) return;
-
-  const { latitude, longitude, name } = data.results[0];
-  loadLocation(latitude, longitude, name);
-}
-
-navigator.geolocation.getCurrentPosition(pos => {
-  loadLocation(pos.coords.latitude, pos.coords.longitude, "Current Location");
+$("tempGraph").innerHTML="";
+w.hourly.temperature_2m.slice(0,24).forEach(t=>{
+$("tempGraph").innerHTML+=`<div class="hour"><div class="bar temp" style="height:${30+t}px"></div><small>${Math.round(t)}°</small></div>`;
 });
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+$("temp7d").innerHTML="";
+for(let i=0;i<7;i++){
+$("temp7d").innerHTML+=`<div class="card">${w.daily.temperature_2m_max[i]}° / ${w.daily.temperature_2m_min[i]}°</div>`;
 }
+
+drawMap(lat,lon,aqi);
+}
+
+/* ---------- SEARCH ---------- */
+async function searchCity(){
+const q=$("cityInput").value.trim();
+if(!q)return;
+const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
+}
+function useLocation(){
+navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"));
+}
+
+/* ---------- BOOT ---------- */
+load(28.61,77.23,"Delhi, India");
+
+/* ---------- PWA ---------- */
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+let dp;
+window.addEventListener("beforeinstallprompt",e=>{
+e.preventDefault();dp=e;$("installBtn").hidden=false;
+});
+$("installBtn").onclick=()=>dp.prompt();
 </script>
 </body>
 </html>
