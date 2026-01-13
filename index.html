@@ -162,31 +162,38 @@ if(a<=300)return["Poor","#e74c3c"];
 return["Severe","#7f0000"];
 }
 
-/* MAP */
+/* MAP FIXED FOR SEARCHED CITY */
 let map,heat,marker;
 function drawMap(lat, lon, aqi, pm25Avg, pm10Avg){
 if(!map){
-map=L.map("map").setView([lat,lon],11);
+map = L.map("map").setView([lat,lon],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+} else {
+map.setView([lat, lon],11); // Move map to searched location
 }
 if(heat) map.removeLayer(heat);
 if(marker) map.removeLayer(marker);
-let [category,color]=aqiInfo(aqi);
-heat=L.heatLayer([
-[lat,lon,aqi/40],
-[lat+0.03,lon+0.03,aqi/60],
-[lat-0.03,lon-0.03,aqi/60],
-[lat+0.03,lon-0.03,aqi/60],
-[lat-0.03,lon+0.03,aqi/60]
+
+let [category,color] = aqiInfo(aqi);
+
+// Heat glow points
+heat = L.heatLayer([
+[lat, lon, aqi/40],
+[lat+0.03, lon+0.03, aqi/60],
+[lat-0.03, lon-0.03, aqi/60],
+[lat+0.03, lon-0.03, aqi/60],
+[lat-0.03, lon+0.03, aqi/60]
 ],{radius:80,blur:50}).addTo(map);
-marker=L.circleMarker([lat,lon],{radius:12,color:"#fff",weight:2,fillColor:color,fillOpacity:1}).addTo(map);
+
+// Marker with popup
+marker = L.circleMarker([lat,lon],{radius:12,color:"#fff",weight:2,fillColor:color,fillOpacity:1}).addTo(map);
 marker.bindPopup(`
 <b>${$("location").textContent}</b><br>
 AQI: ${aqi} (${category})<br>
 Dominant: ${pm25Avg>pm10Avg?"PM2.5":"PM10"}<br>
 Health Risk: ${aqi>200?"High":"Moderate"}<br>
 Mask: ${aqi<=100?"Optional":"N95"}
-`);
+`).openPopup();
 }
 
 /* GRAPHS */
