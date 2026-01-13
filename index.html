@@ -7,7 +7,6 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
@@ -19,7 +18,7 @@ padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)
 }
 
 .app{
-width:100%;max-width:420px;padding:18px;border-radius:22px;
+width:100%;max-width:430px;padding:18px;border-radius:24px;
 background:rgba(255,255,255,.18);backdrop-filter:blur(16px)
 }
 
@@ -41,8 +40,16 @@ background:rgba(255,255,255,.25);
 border-radius:16px;padding:14px;text-align:center;font-size:15px
 }
 
-.big{font-size:28px;font-weight:800}
-#temp{font-size:54px;font-weight:900;text-align:center}
+.big{font-size:30px;font-weight:800}
+
+/* 🔥 BIGGER TEMPERATURE */
+#temp{
+font-size:72px;     
+font-weight:900;
+text-align:center;
+letter-spacing:1px;
+margin:12px 0;
+}
 
 .hourly{display:flex;gap:10px;overflow-x:auto}
 .hour{display:flex;flex-direction:column;align-items:center;font-size:12px}
@@ -51,7 +58,7 @@ border-radius:16px;padding:14px;text-align:center;font-size:15px
 .bar.aqi{background:#43a047}
 .bar.rain{background:#42a5f5}
 
-#map{height:280px;border-radius:18px}
+#map{height:300px;border-radius:18px}
 
 /* DARK */
 body.dark{background:#121212}
@@ -75,7 +82,7 @@ background:#000;color:#fff;border:1px solid #333
 <h1>🌦 Rituva</h1>
 <button id="themeBtn">🌙 Dark Mode</button>
 
-<input id="cityInput" placeholder="Search city or mountain">
+<input id="cityInput" placeholder="Search city / mountain / sea">
 <button onclick="searchCity()">Search</button>
 <button onclick="useLocation()">📍 Use My Location</button>
 
@@ -85,10 +92,12 @@ background:#000;color:#fff;border:1px solid #333
 <div class="details">
 <div class="card">AQI<div id="aqiValue" class="big">--</div><div id="aqiLabel">--</div></div>
 <div class="card">Wind<div id="wind">--</div></div>
-<div class="card">Rain<div id="rainNow">-- mm</div></div>
+<div class="card">Pressure<div id="pressure">-- hPa</div></div>
+<div class="card">Elevation<div id="elev">-- m</div></div>
 <div class="card">Humidity<div id="humidity">--%</div></div>
-<div class="card">Dew Point<div id="dew">--°C</div></div>
-<div class="card">UV<div id="uv">--</div></div>
+<div class="card">Dew<div id="dew">--°C</div></div>
+<div class="card">UV Index<div id="uv">--</div></div>
+<div class="card">Rain<div id="rainNow">-- mm</div></div>
 </div>
 
 <h3>🌫 AQI Insights</h3>
@@ -106,7 +115,7 @@ background:#000;color:#fff;border:1px solid #333
 <h3>🌧 Precipitation (24H)</h3>
 <div class="hourly" id="rainGraph"></div>
 
-<h3>📅 7-Day Temperature</h3>
+<h3>📅 7-Day Forecast</h3>
 <div class="details" id="temp7d"></div>
 
 <h3>🗺 Pollution Intelligence Map</h3>
@@ -126,7 +135,12 @@ function $(i){return document.getElementById(i)}
 function avg(a){return a.reduce((x,y)=>x+y)/a.length}
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 function last24(a){return a.slice(-24)}
+function hourLabel(i){
+let d=new Date();d.setHours(d.getHours()-23+i);
+return d.getHours()+":00";
+}
 
+/* THEME */
 let theme="light";
 $("themeBtn").onclick=()=>{
 theme=theme==="light"?"dark":theme==="dark"?"oled":"light";
@@ -144,9 +158,6 @@ for(let i of b) if(c<=i[1])
 return Math.round(((i[3]-i[2])/(i[1]-i[0]))*(c-i[0])+i[2]);
 }
 
-/* MAP */
-let map,heat,marker;
-
 function aqiInfo(a){
 if(a<=50)return["Good","#2ecc71"];
 if(a<=100)return["Satisfactory","#f1c40f"];
@@ -155,10 +166,13 @@ if(a<=300)return["Poor","#e74c3c"];
 return["Severe","#7f0000"];
 }
 
+/* MAP */
+let map,heat,marker;
 function drawMap(lat,lon,aqi){
 if(!map){
 map=L.map("map").setView([lat,lon],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+.addTo(map);
 }
 
 if(heat)map.removeLayer(heat);
@@ -166,16 +180,16 @@ if(marker)map.removeLayer(marker);
 
 let [txt,col]=aqiInfo(aqi);
 
-/* STRONG GLOW */
+/* GLOW */
 heat=L.heatLayer([
 [lat,lon,aqi/40],
 [lat+.05,lon,aqi/60],
 [lat-.05,lon,aqi/60],
 [lat,lon+.05,aqi/60],
 [lat,lon-.05,aqi/60]
-],
-{radius:90,blur:50}).addTo(map);
+],{radius:90,blur:50}).addTo(map);
 
+/* MARKER */
 marker=L.circleMarker([lat,lon],{
 radius:10,color:"#fff",weight:2,
 fillColor:col,fillOpacity:1
@@ -186,7 +200,31 @@ marker.bindPopup(
 );
 }
 
-/* LOAD */
+/* GRAPHS */
+function renderBars(el,data,max,cls){
+el.innerHTML="";
+for(let i=0;i<data.length;i++){
+let h=Math.max(5,(data[i]/max)*120);
+el.innerHTML+=`
+<div class="hour">
+<div class="bar ${cls}" style="height:${h}px"></div>
+<small>${hourLabel(i)}</small>
+</div>`;
+}
+}
+
+function render7(max,min){
+$("temp7d").innerHTML="";
+for(let i=0;i<max.length;i++){
+$("temp7d").innerHTML+=`
+<div class="card">
+Day ${i+1}<br>
+<b>${max[i]}° / ${min[i]}°</b>
+</div>`;
+}
+}
+
+/* LOAD DATA */
 async function load(lat,lon,name){
 $("location").textContent=name;
 
@@ -195,7 +233,8 @@ let w=await fetch(
 latitude=${lat}&longitude=${lon}
 &current_weather=true
 &hourly=temperature_2m,precipitation,
-relative_humidity_2m,dew_point_2m,uv_index
+relative_humidity_2m,dew_point_2m,uv_index,
+surface_pressure
 &daily=temperature_2m_max,temperature_2m_min
 &timezone=auto`).then(r=>r.json());
 
@@ -207,12 +246,52 @@ latitude=${lat}&longitude=${lon}
 $("temp").textContent=w.current_weather.temperature+"°C";
 $("wind").textContent=w.current_weather.windspeed+" km/h";
 $("uv").textContent=w.hourly.uv_index.slice(-1)[0];
+$("pressure").textContent=
+w.hourly.surface_pressure.slice(-1)[0];
+$("humidity").textContent=
+w.hourly.relative_humidity_2m.slice(-1)[0]+"%";
+$("dew").textContent=
+w.hourly.dew_point_2m.slice(-1)[0]+"°C";
+$("rainNow").textContent=
+w.hourly.precipitation.slice(-1)[0]+" mm";
 
+/* AQI */
 let pm=last24(a.hourly.pm2_5);
 let aqi=Math.round(avg(pm.map(PM25)));
-
 $("aqiValue").textContent=aqi;
 $("aqiLabel").textContent=aqiInfo(aqi)[0];
+
+/* GRAPHS */
+renderBars($("tempGraph"),
+last24(w.hourly.temperature_2m),45,"temp");
+renderBars($("rainGraph"),
+last24(w.hourly.precipitation),10,"rain");
+renderBars($("aqiGraph"),
+pm.map(PM25),300,"aqi");
+
+/* INSIGHTS */
+$("aqiInsights").innerHTML=`
+<div class="card">Category<br><b>${aqiInfo(aqi)[0]}</b></div>
+<div class="card">Health Risk<br>
+<b>${aqi>200?"High":"Moderate"}</b></div>
+<div class="card">Mask<br>
+<b>${aqi<=100?"Optional":"N95"}</b></div>
+<div class="card">Trend<br>
+<b>${pm.at(-1)>pm[0]?"Rising":"Falling"}</b></div>
+`;
+
+/* RAIN */
+let r=last24(w.hourly.precipitation);
+$("rainIntel").innerHTML=`
+<div class="card">3h Rain<br>
+<b>${r.slice(-3).reduce((a,b)=>a+b,0)} mm</b></div>
+<div class="card">Alert<br>
+<b>${r.at(-1)>5?"Heavy":
+r.at(-1)>1?"Light":"None"}</b></div>
+`;
+
+render7(w.daily.temperature_2m_max,
+w.daily.temperature_2m_min);
 
 drawMap(lat,lon,aqi);
 }
