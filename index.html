@@ -135,10 +135,7 @@ function $(i){return document.getElementById(i)}
 function avg(a){return a.reduce((x,y)=>x+y)/a.length}
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 function last24(a){return a.slice(-24)}
-function hourLabel(i){
-let d=new Date();d.setHours(d.getHours()-23+i);
-return d.getHours()+":00";
-}
+function hourLabel(i){let d=new Date();d.setHours(d.getHours()-23+i);return d.getHours()+":00"}
 
 /* THEME */
 let theme="light";
@@ -157,7 +154,6 @@ let b=[[0,30,0,50],[31,60,51,100],[61,90,101,200],
 for(let i of b) if(c<=i[1])
 return Math.round(((i[3]-i[2])/(i[1]-i[0]))*(c-i[0])+i[2]);
 }
-
 function aqiInfo(a){
 if(a<=50)return["Good","#2ecc71"];
 if(a<=100)return["Satisfactory","#f1c40f"];
@@ -168,36 +164,29 @@ return["Severe","#7f0000"];
 
 /* MAP */
 let map,heat,marker;
-function drawMap(lat,lon,aqi){
+function drawMap(lat, lon, aqi, pm25Avg, pm10Avg){
 if(!map){
 map=L.map("map").setView([lat,lon],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
-.addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 }
-
-if(heat)map.removeLayer(heat);
-if(marker)map.removeLayer(marker);
-
-let [txt,col]=aqiInfo(aqi);
-
-/* GLOW */
+if(heat) map.removeLayer(heat);
+if(marker) map.removeLayer(marker);
+let [category,color]=aqiInfo(aqi);
 heat=L.heatLayer([
 [lat,lon,aqi/40],
-[lat+.05,lon,aqi/60],
-[lat-.05,lon,aqi/60],
-[lat,lon+.05,aqi/60],
-[lat,lon-.05,aqi/60]
-],{radius:90,blur:50}).addTo(map);
-
-/* MARKER */
-marker=L.circleMarker([lat,lon],{
-radius:10,color:"#fff",weight:2,
-fillColor:col,fillOpacity:1
-}).addTo(map);
-
-marker.bindPopup(
-`AQI: <b>${aqi}</b><br>Condition: <b>${txt}</b>`
-);
+[lat+0.03,lon+0.03,aqi/60],
+[lat-0.03,lon-0.03,aqi/60],
+[lat+0.03,lon-0.03,aqi/60],
+[lat-0.03,lon+0.03,aqi/60]
+],{radius:80,blur:50}).addTo(map);
+marker=L.circleMarker([lat,lon],{radius:12,color:"#fff",weight:2,fillColor:color,fillOpacity:1}).addTo(map);
+marker.bindPopup(`
+<b>${$("location").textContent}</b><br>
+AQI: ${aqi} (${category})<br>
+Dominant: ${pm25Avg>pm10Avg?"PM2.5":"PM10"}<br>
+Health Risk: ${aqi>200?"High":"Moderate"}<br>
+Mask: ${aqi<=100?"Optional":"N95"}
+`);
 }
 
 /* GRAPHS */
@@ -205,22 +194,13 @@ function renderBars(el,data,max,cls){
 el.innerHTML="";
 for(let i=0;i<data.length;i++){
 let h=Math.max(5,(data[i]/max)*120);
-el.innerHTML+=`
-<div class="hour">
-<div class="bar ${cls}" style="height:${h}px"></div>
-<small>${hourLabel(i)}</small>
-</div>`;
+el.innerHTML+=`<div class="hour"><div class="bar ${cls}" style="height:${h}px"></div><small>${hourLabel(i)}</small></div>`;
 }
 }
-
 function render7(max,min){
 $("temp7d").innerHTML="";
 for(let i=0;i<max.length;i++){
-$("temp7d").innerHTML+=`
-<div class="card">
-Day ${i+1}<br>
-<b>${max[i]}° / ${min[i]}°</b>
-</div>`;
+$("temp7d").innerHTML+=`<div class="card">Day ${i+1}<br><b>${max[i]}° / ${min[i]}°</b></div>`;
 }
 }
 
@@ -228,98 +208,90 @@ Day ${i+1}<br>
 async function load(lat,lon,name){
 $("location").textContent=name;
 
-let w=await fetch(
-`https://api.open-meteo.com/v1/forecast?
-latitude=${lat}&longitude=${lon}
-&current_weather=true
-&hourly=temperature_2m,precipitation,
-relative_humidity_2m,dew_point_2m,uv_index,
-surface_pressure
-&daily=temperature_2m_max,temperature_2m_min
-&timezone=auto`).then(r=>r.json());
+/* GEOCODING: Elevation */
+let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1`).then(r=>r.json());
+let elev=geo.results?.[0]?.elevation||0;
+$("elev").textContent=elev+" m";
 
-let a=await fetch(
-`https://air-quality-api.open-meteo.com/v1/air-quality?
-latitude=${lat}&longitude=${lon}
-&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+/* WEATHER */
+let w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,dew_point_2m,uv_index,surface_pressure,cape&daily=temperature_2m_max,temperature_2m_min&timezone=auto`).then(r=>r.json());
 
+/* AIR QUALITY */
+let a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
+
+/* WEATHER DISPLAY */
 $("temp").textContent=w.current_weather.temperature+"°C";
-$("wind").textContent=w.current_weather.windspeed+" km/h";
+$("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
 $("uv").textContent=w.hourly.uv_index.slice(-1)[0];
-$("pressure").textContent=
-w.hourly.surface_pressure.slice(-1)[0];
-$("humidity").textContent=
-w.hourly.relative_humidity_2m.slice(-1)[0]+"%";
-$("dew").textContent=
-w.hourly.dew_point_2m.slice(-1)[0]+"°C";
-$("rainNow").textContent=
-w.hourly.precipitation.slice(-1)[0]+" mm";
+$("pressure").textContent=w.hourly.surface_pressure.slice(-1)[0];
+$("humidity").textContent=w.hourly.relative_humidity_2m.slice(-1)[0]+"%";
+$("dew").textContent=w.hourly.dew_point_2m.slice(-1)[0]+"°C";
+$("rainNow").textContent=w.hourly.precipitation.slice(-1)[0]+" mm";
 
 /* AQI */
-let pm=last24(a.hourly.pm2_5);
-let aqi=Math.round(avg(pm.map(PM25)));
+let pm25=last24(a.hourly.pm2_5);
+let pm10=last24(a.hourly.pm10);
+let aqi24=pm25.map((v,i)=>Math.max(PM25(v),PM25(pm10[i])));
+let aqi=Math.round(avg(aqi24));
+
 $("aqiValue").textContent=aqi;
 $("aqiLabel").textContent=aqiInfo(aqi)[0];
 
 /* GRAPHS */
-renderBars($("tempGraph"),
-last24(w.hourly.temperature_2m),45,"temp");
-renderBars($("rainGraph"),
-last24(w.hourly.precipitation),10,"rain");
-renderBars($("aqiGraph"),
-pm.map(PM25),300,"aqi");
+renderBars($("tempGraph"),last24(w.hourly.temperature_2m),45,"temp");
+renderBars($("rainGraph"),last24(w.hourly.precipitation),10,"rain");
+renderBars($("aqiGraph"),aqi24,300,"aqi");
 
-/* INSIGHTS */
+/* AQI Insights */
 $("aqiInsights").innerHTML=`
 <div class="card">Category<br><b>${aqiInfo(aqi)[0]}</b></div>
-<div class="card">Health Risk<br>
-<b>${aqi>200?"High":"Moderate"}</b></div>
-<div class="card">Mask<br>
-<b>${aqi<=100?"Optional":"N95"}</b></div>
-<div class="card">Trend<br>
-<b>${pm.at(-1)>pm[0]?"Rising":"Falling"}</b></div>
+<div class="card">AQI<br><b>${aqi}</b></div>
+<div class="card">Trend<br><b>${aqi24[aqi24.length-1]>aqi24[0]?"Rising ↑":"Falling ↓"}</b></div>
+<div class="card">Dominant<br><b>${avg(pm25)>avg(pm10)?"PM2.5":"PM10"}</b></div>
+<div class="card">Health Risk<br><b>${aqi>200?"High":"Moderate"}</b></div>
+<div class="card">Mask<br><b>${aqi<=100?"Optional":"N95"}</b></div>
 `;
 
-/* RAIN */
-let r=last24(w.hourly.precipitation);
+/* Rain Intelligence */
+let rain3=w.hourly.precipitation.slice(-3).reduce((a,b)=>a+b,0);
+let prob3=Math.max(...w.hourly.precipitation_probability.slice(-3));
+let maxCAPE=Math.max(...w.hourly.cape.slice(-3));
+let avgHum=Math.round(avg(w.hourly.relative_humidity_2m));
 $("rainIntel").innerHTML=`
-<div class="card">3h Rain<br>
-<b>${r.slice(-3).reduce((a,b)=>a+b,0)} mm</b></div>
-<div class="card">Alert<br>
-<b>${r.at(-1)>5?"Heavy":
-r.at(-1)>1?"Light":"None"}</b></div>
+<div class="card">Rain Probability<br><b>${prob3}%</b></div>
+<div class="card">3h Rain<br><b>${rain3.toFixed(1)} mm</b></div>
+<div class="card">Thunderstorm<br><b>${maxCAPE>2000?"Severe":maxCAPE>1000?"Possible":"Low"}</b></div>
+<div class="card">Humidity Avg<br><b>${avgHum}%</b></div>
 `;
 
-render7(w.daily.temperature_2m_max,
-w.daily.temperature_2m_min);
+/* 7-day temp */
+render7(w.daily.temperature_2m_max,w.daily.temperature_2m_min);
 
-drawMap(lat,lon,aqi);
+/* MAP */
+drawMap(lat,lon,aqi,avg(pm25),avg(pm10));
 }
 
 /* SEARCH */
 async function searchCity(){
-let q=$("cityInput").value;
-let g=await fetch(
-`https://geocoding-api.open-meteo.com/v1/search?
-name=${q}&count=5`).then(r=>r.json());
-
-let r=g.results.find(x=>x.country==="Nepal")||g.results[0];
+let q=$("cityInput").value;if(!q)return;
+let g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5`).then(r=>r.json());
+if(!g.results?.length)return alert("Location not found");
+let r=g.results[0];
 load(r.latitude,r.longitude,r.name+", "+r.country);
 }
 
 /* LOCATION */
 function useLocation(){
 navigator.geolocation.getCurrentPosition(
-p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
-()=>alert("Location denied"));
+p=>load(p.coords.latitude,p.coords.longitude,"Current Location"),
+()=>alert("Location access denied"));
 }
 
 /* DEFAULT */
 load(22.5726,88.3639,"Kolkata, India");
 
 /* PWA */
-if("serviceWorker"in navigator)
-navigator.serviceWorker.register("sw.js");
+if("serviceWorker"in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
