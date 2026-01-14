@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rituva-v2-safe';
+const CACHE_NAME = 'rituva-v3-polar-safe';
 
 const APP_SHELL = [
   './',
@@ -31,28 +31,29 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-/* FETCH – SAFE STRATEGY */
+/* FETCH STRATEGY */
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  /* ❌ NEVER cache live API data */
+  /* 🚫 NEVER cache live scientific data */
   if (
     url.hostname.includes('open-meteo.com') ||
+    url.hostname.includes('air-quality-api') ||
     url.hostname.includes('openstreetmap.org')
   ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  /* ✅ Cache-first for app shell */
+  /* ✅ Cache-first only for static assets */
   event.respondWith(
-    caches.match(event.request).then(response => {
+    caches.match(event.request).then(cached => {
       return (
-        response ||
-        fetch(event.request).then(fetchRes => {
+        cached ||
+        fetch(event.request).then(response => {
           return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, fetchRes.clone());
-            return fetchRes;
+            cache.put(event.request, response.clone());
+            return response;
           });
         })
       );
