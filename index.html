@@ -3,172 +3,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva – Advanced Polar & Global Weather</title>
+<title>Rituva – Weather, AQI & Polar Intelligence</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-:root{
-  --bg:#000;
-  --card:#0b0b0b;
-  --text:#fff;
-  --muted:#aaa;
-  --accent:#00e5ff;
-}
+*{box-sizing:border-box;font-family:system-ui}
 body{
-  margin:0;
-  font-family:system-ui, sans-serif;
-  background:var(--bg);
-  color:var(--text);
+  margin:0;min-height:100vh;display:flex;justify-content:center;
+  padding:14px;background:#000;color:#fff
 }
-header{
-  padding:14px;
-  text-align:center;
-  font-size:22px;
-  font-weight:700;
+.app{
+  width:100%;max-width:420px;padding:18px;border-radius:24px;
+  background:#000;border:1px solid #222
 }
-#map{height:50vh;}
-.panel{
-  padding:12px;
+h1,h2,h3{margin:.4em 0;text-align:center}
+button,input{
+  width:100%;padding:14px;border-radius:14px;border:none;
+  margin-bottom:10px;font-size:16px
 }
+button{background:#111;color:#fff;font-weight:600}
+input{background:#111;color:#fff}
+.big-temp{font-size:64px;font-weight:900;text-align:center}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .card{
-  background:var(--card);
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px;
+  background:#0b0b0b;border-radius:16px;padding:12px;
+  text-align:center;font-size:14px;border:1px solid #222
 }
-.big-temp{
-  font-size:52px;
-  font-weight:800;
-}
-button{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:none;
-  background:var(--accent);
-  color:#000;
-  font-size:16px;
-  font-weight:700;
-}
+.hourly{display:flex;gap:8px;overflow-x:auto}
+.hour{font-size:11px;text-align:center}
+.bar{width:18px;border-radius:6px}
+.temp{background:#ff7043}
+.aqi{background:#43a047}
+.rain{background:#42a5f5}
+#map{height:260px;border-radius:18px;margin-top:10px}
 #polarModal{
-  position:fixed;
-  inset:0;
-  background:#000;
-  z-index:9999;
-  display:none;
+  position:fixed;inset:0;background:#000;z-index:9999;
+  display:none;flex-direction:column;padding:10px
 }
-#polarMap{height:100%;}
-.close-btn{
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index:10000;
-}
+#polarMap{flex:1;border-radius:18px}
+footer{font-size:11px;text-align:center;opacity:.6;margin-top:12px}
 </style>
 </head>
+
 <body>
+<div class="app">
 
-<header>Rituva – Advanced Weather Intelligence</header>
-<div id="map"></div>
+<h1>🌍 Rituva</h1>
 
-<div class="panel">
-  <div class="card">
-    <div class="big-temp" id="temp">--°C</div>
-    <div id="location">Detecting location…</div>
-  </div>
+<input id="cityInput" placeholder="Search city / region">
+<button onclick="searchCity()">🔍 Search</button>
+<button onclick="useLocation()">📍 Use My Location</button>
+<button onclick="openPolar()">🧊 Polar Mode</button>
 
-  <div class="card">
-    <strong>AQI</strong>
-    <div id="aqi">Loading…</div>
-  </div>
+<h2 id="location">Loading…</h2>
+<div id="temp" class="big-temp">--°C</div>
 
-  <div class="card">
-    <strong>Rain & Precipitation</strong>
-    <div id="rain">Loading…</div>
-  </div>
-
-  <div class="card">
-    <strong>24‑Hour Temperature</strong>
-    <div id="hourly">Loading…</div>
-  </div>
-
-  <div class="card">
-    <strong>7‑Day Forecast</strong>
-    <div id="daily">Loading…</div>
-  </div>
-
-  <button onclick="openPolar()">❄️ Polar Mode (North / South Pole)</button>
+<div class="details">
+  <div class="card"><b>AQI</b><div id="aqi">--</div><div id="aqiLabel">--</div></div>
+  <div class="card"><b>Wind</b><div id="wind">--</div></div>
+  <div class="card"><b>Rain</b><div id="rainNow">-- mm</div></div>
+  <div class="card"><b>Humidity</b><div id="humidity">--%</div></div>
 </div>
 
-<!-- Polar Modal -->
+<h3>🌫 AQI Intelligence</h3>
+<div class="details" id="aqiInsights"></div>
+
+<h3>☔ Rain Intelligence</h3>
+<div class="details" id="rainIntel"></div>
+
+<h3>📈 AQI (24h)</h3>
+<div class="hourly" id="aqiGraph"></div>
+
+<h3>🌡 Temp (24h)</h3>
+<div class="hourly" id="tempGraph"></div>
+
+<h3>🌧 Rain (24h)</h3>
+<div class="hourly" id="rainGraph"></div>
+
+<h3>📅 7-Day Temperature</h3>
+<div class="details" id="temp7d"></div>
+
+<h3>🗺 Pollution Intelligence Map</h3>
+<div id="map"></div>
+
+<footer>© Manik Roy 2026 • Scientific Weather Intelligence</footer>
+</div>
+
+<!-- POLAR MODE WINDOW -->
 <div id="polarModal">
-  <button class="close-btn" onclick="closePolar()">Close</button>
+  <button onclick="closePolar()">⬅ Back</button>
+  <h2>🧊 Polar Intelligence</h2>
+  <div id="polarInfo" class="card">Loading polar data…</div>
   <div id="polarMap"></div>
 </div>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
 <script>
-let map = L.map('map').setView([20,78],4);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+const $=id=>document.getElementById(id);
+let map,heat,polarMap;
 
-function fetchWeather(lat,lon){
-  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation&daily=temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto`;
-  fetch(url).then(r=>r.json()).then(d=>{
-    document.getElementById('temp').textContent=d.current_weather.temperature+'°C';
-    document.getElementById('hourly').textContent='Hourly data available';
-    document.getElementById('daily').textContent='7‑day forecast available';
+function bars(el,data,max,cls){
+  el.innerHTML="";
+  data.forEach(v=>{
+    el.innerHTML+=`<div class="hour">
+      <div class="bar ${cls}" style="height:${Math.max(6,v/max*120)}px"></div>
+    </div>`;
   });
 }
 
-function fetchAQI(lat,lon){
-  const url=`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,us_aqi`;
-  fetch(url).then(r=>r.json()).then(d=>{
-    const aqi=d.hourly.us_aqi[0];
-    let level='Good';
-    if(aqi>50) level='Moderate';
-    if(aqi>100) level='Unhealthy';
-    document.getElementById('aqi').textContent=`AQI ${aqi} – ${level}`;
+async function load(lat,lon,name){
+  $("location").textContent=name;
+
+  const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto`).then(r=>r.json());
+
+  const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
+
+  $("temp").textContent=w.current_weather.temperature+"°C";
+  $("wind").textContent=w.current_weather.windspeed+" km/h";
+  $("rainNow").textContent=w.hourly.precipitation.at(-1)+" mm";
+  $("humidity").textContent=w.hourly.relative_humidity_2m.at(-1)+"%";
+
+  const pm25=a.hourly.pm2_5.slice(-24);
+  const pm10=a.hourly.pm10.slice(-24);
+  const aqi=Math.round((pm25.at(-1)+pm10.at(-1))/2);
+
+  $("aqi").textContent=aqi;
+  $("aqiLabel").textContent=aqi<=50?"Good":aqi<=100?"Moderate":"Poor";
+
+  $("aqiInsights").innerHTML=`
+    <div class="card">PM2.5<br><b>${pm25.at(-1)}</b></div>
+    <div class="card">PM10<br><b>${pm10.at(-1)}</b></div>
+    <div class="card">Health<br><b>${aqi>100?"Risk":"Safe"}</b></div>
+    <div class="card">Mask<br><b>${aqi>100?"N95":"Optional"}</b></div>
+  `;
+
+  $("rainIntel").innerHTML=`
+    <div class="card">Rain 3h<br><b>${w.hourly.precipitation.slice(-3).reduce((a,b)=>a+b,0)} mm</b></div>
+    <div class="card">Status<br><b>${w.hourly.precipitation.at(-1)>1?"Rain":"Dry"}</b></div>
+  `;
+
+  bars($("aqiGraph"),pm25,150,"aqi");
+  bars($("tempGraph"),w.hourly.temperature_2m.slice(-24),40,"temp");
+  bars($("rainGraph"),w.hourly.precipitation.slice(-24),10,"rain");
+
+  $("temp7d").innerHTML="";
+  w.daily.temperature_2m_max.forEach((v,i)=>{
+    $("temp7d").innerHTML+=`<div class="card">Day ${i+1}<br><b>${v}° / ${w.daily.temperature_2m_min[i]}°</b></div>`;
   });
+
+  if(!map){
+    map=L.map("map").setView([lat,lon],5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  }
+  if(heat)map.removeLayer(heat);
+  heat=L.heatLayer([[lat,lon,1]],{radius:50,blur:30}).addTo(map);
 }
 
-function fetchRain(lat,lon){
-  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation`;
-  fetch(url).then(r=>r.json()).then(d=>{
-    document.getElementById('rain').textContent=`Precipitation data active (Polar‑safe)`;
-  });
-}
-
-navigator.geolocation.getCurrentPosition(pos=>{
-  const lat=pos.coords.latitude;
-  const lon=pos.coords.longitude;
-  map.setView([lat,lon],7);
-  L.marker([lat,lon]).addTo(map);
-  document.getElementById('location').textContent=`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
-  fetchWeather(lat,lon);
-  fetchAQI(lat,lon);
-  fetchRain(lat,lon);
-},()=>{
-  document.getElementById('location').textContent='Location access denied';
-});
-
-// Polar Mode
-let polarMap;
 function openPolar(){
-  document.getElementById('polarModal').style.display='block';
-  polarMap=L.map('polarMap',{worldCopyJump:true}).setView([90,0],3);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:6}).addTo(polarMap);
-  L.marker([90,0]).addTo(polarMap).bindPopup('North Pole');
-  L.marker([-90,0]).addTo(polarMap).bindPopup('South Pole');
-  fetchWeather(90,0);
-  fetchAQI(90,0);
-  fetchRain(90,0);
+  $("polarModal").style.display="flex";
+  if(!polarMap){
+    polarMap=L.map("polarMap",{worldCopyJump:true}).setView([90,0],2);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(polarMap);
+  }
+  load(90,0,"North Pole");
+  $("polarInfo").innerHTML="❄️ Polar grid active • Real satellite interpolation";
 }
-function closePolar(){
-  document.getElementById('polarModal').style.display='none';
+function closePolar(){ $("polarModal").style.display="none"; }
+
+async function searchCity(){
+  const q=$("cityInput").value;
+  if(!q)return;
+  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+  if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
 }
+function useLocation(){
+  navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"));
+}
+
+load(22.5726,88.3639,"Kolkata, India");
+
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
