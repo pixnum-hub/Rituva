@@ -1,251 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Rituva – Weather & AQI Intelligence</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rituva</title>
 
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0b1220" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000">
 
 <style>
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0b1220;
-  color: #ffffff;
+*{box-sizing:border-box;font-family:system-ui,-apple-system}
+body{
+margin:0;
+background:#000;
+color:#fff;
+display:flex;
+justify-content:center;
+}
+.app{
+width:100%;
+max-width:420px;
+padding:18px 16px 40px;
 }
 
-header {
-  padding: 14px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  background: #111a2e;
+/* HEADER */
+.header{
+display:flex;
+align-items:center;
+gap:10px;
+font-size:32px;
+font-weight:700;
+margin-bottom:18px;
 }
 
-.container {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+/* BUTTONS */
+.btn,input{
+width:100%;
+padding:18px;
+border-radius:22px;
+border:none;
+background:#1e1e1e;
+color:#fff;
+font-size:18px;
+margin-bottom:14px;
+}
+.btn.secondary{background:#262626}
+
+/* LOCATION */
+.location{
+font-size:28px;
+font-weight:600;
+margin:22px 0 6px;
 }
 
-.card {
-  background: #111a2e;
-  border-radius: 14px;
-  padding: 14px;
+/* TEMP */
+.temp{
+font-size:88px;
+font-weight:800;
+text-align:center;
+margin:12px 0 28px;
 }
 
-.card h3 {
-  margin: 0 0 10px;
-  font-size: 15px;
-  color: #9ecbff;
+/* GRID */
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:16px;
+}
+.card{
+background:#5a5a5a;
+border-radius:22px;
+padding:18px;
+text-align:center;
+}
+.card h4{
+margin:0;
+font-weight:500;
+opacity:.9;
+}
+.card .value{
+font-size:34px;
+font-weight:700;
+margin-top:8px;
+}
+.card small{
+font-size:16px;
+opacity:.9;
 }
 
-.search {
-  display: flex;
-  gap: 8px;
+/* SECTION */
+.section{
+margin-top:30px;
+}
+.section h3{
+margin-bottom:12px;
+font-size:22px;
 }
 
-input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  outline: none;
+/* BARS */
+.bars{
+display:flex;
+gap:8px;
+overflow-x:auto;
+padding-bottom:8px;
 }
-
-button {
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  background: #1f6fff;
-  color: white;
-  cursor: pointer;
+.barwrap{
+display:flex;
+flex-direction:column;
+align-items:center;
+font-size:11px;
 }
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.bar{
+width:18px;
+border-radius:8px 8px 0 0;
 }
-
-.value {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.small {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.full {
-  grid-column: span 2;
-}
-
-.hidden {
-  display: none;
-}
-
-footer {
-  text-align: center;
-  padding: 10px;
-  font-size: 12px;
-  opacity: 0.6;
-}
+.bar.temp{background:#ff7043}
+.bar.aqi{background:#43a047}
+.bar.rain{background:#42a5f5}
 </style>
 </head>
 
 <body>
+<div class="app">
 
-<header>Rituva – Weather & AQI Intelligence</header>
+<div class="header">🌦️ Rituva</div>
 
-<div class="container">
+<button class="btn secondary">🖤 OLED Mode</button>
 
-  <!-- SEARCH -->
+<input id="search" placeholder="Search city / mountain / sea">
+<button class="btn" onclick="searchCity()">Search</button>
+<button class="btn secondary" onclick="useLocation()">📍 Use My Location</button>
+
+<div class="location" id="place">—</div>
+<div class="temp" id="temp">--°C</div>
+
+<div class="grid">
   <div class="card">
-    <div class="search">
-      <input id="cityInput" placeholder="Search city…" />
-      <button onclick="searchCity()">Search</button>
-      <button onclick="useMyLocation()">📍</button>
-    </div>
+    <h4>AQI</h4>
+    <div class="value" id="aqi">--</div>
+    <small id="aqiLabel">—</small>
   </div>
-
-  <!-- LOCATION CONDITIONS -->
-  <div class="card" id="locationCard">
-    <h3>📍 Location Conditions</h3>
-    <div class="grid">
-      <div>
-        <div class="value" id="locName">—</div>
-        <div class="small">Location</div>
-      </div>
-      <div>
-        <div class="value" id="temp">—</div>
-        <div class="small">Temperature (°C)</div>
-      </div>
-      <div>
-        <div class="value" id="humidity">—</div>
-        <div class="small">Humidity (%)</div>
-      </div>
-      <div>
-        <div class="value" id="wind">—</div>
-        <div class="small">Wind (m/s)</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- AQI -->
   <div class="card">
-    <h3>📈 AQI Intelligence</h3>
-    <div class="grid">
-      <div>
-        <div class="value" id="pm25">—</div>
-        <div class="small">PM2.5</div>
-      </div>
-      <div>
-        <div class="value" id="pm10">—</div>
-        <div class="small">PM10</div>
-      </div>
-      <div class="full small" id="aqiStatus">Waiting for data…</div>
-    </div>
+    <h4>Wind</h4>
+    <div class="value" id="wind">--</div>
+    <small>km/h</small>
   </div>
-
-  <!-- RAIN -->
   <div class="card">
-    <h3>☔ Rain Intelligence</h3>
-    <div class="grid">
-      <div>
-        <div class="value" id="rain">—</div>
-        <div class="small">Rain (mm)</div>
-      </div>
-      <div>
-        <div class="value" id="clouds">—</div>
-        <div class="small">Clouds (%)</div>
-      </div>
-    </div>
+    <h4>Pressure</h4>
+    <div class="value" id="pressure">--</div>
+    <small>hPa</small>
   </div>
-
-  <!-- 24H -->
   <div class="card">
-    <h3>🌡 Temperature (24H)</h3>
-    <div class="small" id="temp24">Loading…</div>
+    <h4>Elevation</h4>
+    <div class="value" id="elevation">--</div>
+    <small>m</small>
   </div>
+</div>
 
-  <!-- 7 DAY -->
-  <div class="card">
-    <h3>📅 7-Day Temperature</h3>
-    <div class="small" id="temp7">Loading…</div>
-  </div>
+<!-- RAIN -->
+<div class="section">
+<h3>☔ Rain Intelligence</h3>
+<div class="grid">
+<div class="card"><h4>Now</h4><div class="value" id="rainNow">--</div><small>mm</small></div>
+<div class="card"><h4>Next 3h</h4><div class="value" id="rain3h">--</div><small>mm</small></div>
+</div>
+</div>
 
-  <!-- POLAR MODE -->
-  <div class="card">
-    <h3>🧊 Polar Mode</h3>
-    <button onclick="openPolar()">Open Polar Window</button>
-  </div>
+<!-- AQI GRAPH -->
+<div class="section">
+<h3>📈 AQI (24H)</h3>
+<div class="bars" id="aqiGraph"></div>
+</div>
+
+<!-- TEMP GRAPH -->
+<div class="section">
+<h3>🌡 Temperature (24H)</h3>
+<div class="bars" id="tempGraph"></div>
+</div>
+
+<!-- 7 DAY -->
+<div class="section">
+<h3>📅 7-Day Temperature</h3>
+<div class="grid" id="temp7d"></div>
+</div>
 
 </div>
 
-<footer>
-Free open data · No API key · © Manik Roy 2026
-</footer>
-
 <script>
-const WEATHER_API = "https://api.open-meteo.com/v1/forecast";
-const AQI_API = "https://air-quality-api.open-meteo.com/v1/air-quality";
-const GEO_API = "https://nominatim.openstreetmap.org/search";
+const $=id=>document.getElementById(id);
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
 
-function updateWeather(lat, lon, name="") {
-  fetch(`${WEATHER_API}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover&hourly=temperature_2m&daily=temperature_2m_max&timezone=auto`)
-    .then(r=>r.json())
-    .then(d=>{
-      document.getElementById("locName").textContent = name || "Your Location";
-      document.getElementById("temp").textContent = d.current.temperature_2m;
-      document.getElementById("humidity").textContent = d.current.relative_humidity_2m;
-      document.getElementById("wind").textContent = d.current.wind_speed_10m;
-      document.getElementById("clouds").textContent = d.current.cloud_cover;
-      document.getElementById("temp24").textContent = d.hourly.temperature_2m.slice(0,24).join(" °C , ");
-      document.getElementById("temp7").textContent = d.daily.temperature_2m_max.join(" °C , ");
-    });
-
-  fetch(`${AQI_API}?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5`)
-    .then(r=>r.json())
-    .then(d=>{
-      const pm25 = d.hourly.pm2_5[0];
-      const pm10 = d.hourly.pm10[0];
-      document.getElementById("pm25").textContent = pm25;
-      document.getElementById("pm10").textContent = pm10;
-      document.getElementById("aqiStatus").textContent =
-        pm25 < 50 ? "Good" : pm25 < 100 ? "Moderate" : "Poor";
-    });
+function bar(el,val,max,cls,label){
+let h=Math.max(4,(val/max)*120);
+return `<div class="barwrap">
+<div class="bar ${cls}" style="height:${h}px"></div>
+<small>${label}</small>
+</div>`;
 }
 
-function searchCity() {
-  const q = cityInput.value;
-  fetch(`${GEO_API}?q=${q}&format=json`)
-    .then(r=>r.json())
-    .then(d=>{
-      if (!d[0]) return alert("City not found");
-      updateWeather(d[0].lat, d[0].lon, d[0].display_name);
-    });
+/* AQI CPCB */
+function calc(c,b){return Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2])}
+function PM25(c){
+let b=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];
+for(let i of b) if(c<=i[1]) return calc(c,i);
+}
+function labelAQI(a){
+return a<=50?"Good":a<=100?"Satisfactory":a<=200?"Moderate":a<=300?"Poor":"Severe";
 }
 
-function useMyLocation() {
-  navigator.geolocation.getCurrentPosition(
-    pos => updateWeather(pos.coords.latitude, pos.coords.longitude),
-    () => alert("Location permission denied")
-  );
+async function load(lat,lon,name){
+$("place").textContent=name;
+
+const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,surface_pressure&daily=temperature_2m_max,temperature_2m_min&timezone=auto`).then(r=>r.json());
+const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+const e=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`).then(r=>r.json());
+
+$("temp").textContent=Math.round(w.current_weather.temperature)+"°C";
+$("wind").textContent=w.current_weather.windspeed;
+$("pressure").textContent=Math.round(w.hourly.surface_pressure.at(-1));
+$("elevation").textContent=Math.round(e.elevation);
+
+const pm=a.hourly.pm2_5.at(-1);
+const aqi=PM25(pm);
+$("aqi").textContent=aqi;
+$("aqiLabel").textContent=labelAQI(aqi);
+
+$("rainNow").textContent=w.hourly.precipitation.at(-1);
+$("rain3h").textContent=w.hourly.precipitation.slice(-3).reduce((x,y)=>x+y,0).toFixed(1);
+
+/* GRAPHS */
+$("aqiGraph").innerHTML="";
+a.hourly.pm2_5.slice(-24).forEach((v,i)=>$("aqiGraph").innerHTML+=bar("","",PM25(v),300,"aqi",i));
+
+$("tempGraph").innerHTML="";
+w.hourly.temperature_2m.slice(-24).forEach((v,i)=>$("tempGraph").innerHTML+=bar("","",v,45,"temp",i));
+
+/* 7 DAY */
+$("temp7d").innerHTML="";
+w.daily.temperature_2m_max.forEach((v,i)=>{
+$("temp7d").innerHTML+=`
+<div class="card">
+<h4>Day ${i+1}</h4>
+<div class="value">${v}°</div>
+<small>${w.daily.temperature_2m_min[i]}°</small>
+</div>`;
+});
 }
 
-function openPolar() {
-  window.open("https://api.open-meteo.com/v1/forecast?latitude=90&longitude=0&current=temperature_2m","_blank");
+async function searchCity(){
+const q=$("search").value;
+if(!q)return;
+const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+if(g.results) load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
 }
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+function useLocation(){
+navigator.geolocation.getCurrentPosition(
+p=>load(p.coords.latitude,p.coords.longitude,"Current Location"),
+()=>load(22.5726,88.3639,"Kolkata, India")
+);
 }
+
+/* DEFAULT */
+load(22.5726,88.3639,"Kolkata, India");
+
+/* SW */
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
 </script>
-
 </body>
 </html>
