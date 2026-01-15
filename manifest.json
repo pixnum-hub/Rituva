@@ -1,26 +1,23 @@
 {
-  "name": "Rituva – Weather, AQI & Polar Intelligence",
+  "name": "Rituva – Weather & AQI Intelligence",
   "short_name": "Rituva",
-  "description": "Advanced weather, air quality, rain and polar intelligence app with real scientific data.",
+  "description": "Live weather, AQI, rain intelligence and polar climate monitoring using free open data.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen"],
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
