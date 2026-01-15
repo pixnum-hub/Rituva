@@ -1,62 +1,47 @@
-const CACHE_NAME = 'rituva-v3-polar-safe';
+const CACHE_NAME = "rituva-cache-v4";
 
-const APP_SHELL = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  'https://unpkg.com/leaflet/dist/leaflet.css',
-  'https://unpkg.com/leaflet/dist/leaflet.js',
-  'https://unpkg.com/leaflet.heat/dist/leaflet-heat.js'
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
-/* INSTALL */
-self.addEventListener('install', event => {
-  self.skipWaiting();
+// INSTALL
+self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
-/* ACTIVATE */
-self.addEventListener('activate', event => {
+// ACTIVATE (clean old caches)
+self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(key => key !== CACHE_NAME)
+            .map(key => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-/* FETCH STRATEGY */
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+// FETCH (Network first → Cache fallback)
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
 
-  /* 🚫 NEVER cache live scientific data */
-  if (
-    url.hostname.includes('open-meteo.com') ||
-    url.hostname.includes('air-quality-api') ||
-    url.hostname.includes('openstreetmap.org')
-  ) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  /* ✅ Cache-first only for static assets */
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return (
-        cached ||
-        fetch(event.request).then(response => {
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, response.clone());
-            return response;
-          });
-        })
-      );
-    }).catch(() => caches.match('./index.html'))
+    fetch(event.request)
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clone);
+        });
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
