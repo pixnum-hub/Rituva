@@ -40,6 +40,7 @@ body.dark .card,body.oled .card{background:var(--card-dark)}
 .big{font-size:32px;font-weight:700}
 #temp{font-size:58px;font-weight:800;text-align:center}
 
+/* AQI Glow */
 #aqiValue.good{color:var(--aqi-good);text-shadow:0 0 8px var(--aqi-good);}
 #aqiValue.moderate{color:var(--aqi-moderate);text-shadow:0 0 12px var(--aqi-moderate);}
 #aqiValue.poor{color:var(--aqi-poor);text-shadow:0 0 16px var(--aqi-poor);}
@@ -118,16 +119,13 @@ footer{text-align:center;font-size:12px;margin-top:16px}
     <div id="map"></div>
   </div>
 
-  <footer>© Manik Roy 2025. All Rights Reserved.</footer>
+  <footer>© Manik Roy</footer>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <script>
-// Short selectors
 const $ = id => document.getElementById(id);
-
-// Theme
 let theme = localStorage.getItem('theme') || "light";
 document.body.className = theme;
 $("themeBtn").onclick = () => {
@@ -136,7 +134,6 @@ $("themeBtn").onclick = () => {
     localStorage.setItem('theme', theme);
 };
 
-// Utilities
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
 function last24(arr){return arr?arr.slice(-24):[]}
 function hourLabel(i){let d=new Date();d.setHours(d.getHours()-23+i);return d.getHours()+":00"}
@@ -173,20 +170,27 @@ async function fetchAQIPoints(lat, lon, spacing){
 }
 
 async function drawMapAdaptive(lat, lon){
-    lastLat = lat; lastLon = lon;
+    lastLat = lat;
+    lastLon = lon;
+
     if(!map){
         map = L.map("map").setView([lat, lon], 10);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    } else {
+        map.setView([lat, lon], 10);
     }
+
+    if(heat){map.removeLayer(heat); heat=null;}
     async function redraw(){
         const zoom = map.getZoom();
-        const spacing = zoom>12 ? 0.005 : zoom>10 ? 0.01 : 0.02; 
-        const points = await fetchAQIPoints(lastLat, lastLon, spacing);
+        const spacing = zoom>12 ? 0.005 : zoom>10 ? 0.01 : 0.02;
+        const points = await fetchAQIPoints(lastLat,lastLon,spacing);
         if(heat) map.removeLayer(heat);
-        heat = L.heatLayer(points, {radius:45, blur:25, gradient:{0.2:"#00e676",0.5:"#ffeb3b",1:"#f44336"}}).addTo(map);
+        heat = L.heatLayer(points,{radius:45,blur:25,gradient:{0.2:"#00e676",0.5:"#ffeb3b",1:"#f44336"}}).addTo(map);
     }
+    map.off('zoomend');
     map.on('zoomend', redraw);
-    redraw();
+    await redraw();
 }
 
 // AQI
@@ -199,9 +203,8 @@ function calculateAQI(pm25, pm10){
                 : 150;
     return Math.max(aqi25, aqi10);
 }
-
 function updateAQIGlow(aqi){
-    $("aqiValue").className = "big " + (aqi<=50?"good":aqi<=100?"moderate":"poor");
+    $("aqiValue").className = "big "+(aqi<=50?"good":aqi<=100?"moderate":"poor");
 }
 
 // Load weather & AQI
@@ -255,7 +258,6 @@ $("searchBtn").onclick = async () => {
     const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
     if(g.results) load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
 };
-
 $("locBtn").onclick = () => {
     navigator.geolocation.getCurrentPosition(
         p => load(p.coords.latitude, p.coords.longitude, "Current Location"),
@@ -268,4 +270,3 @@ load(22.5726,88.3639,"Kolkata, India");
 </script>
 </body>
 </html>
-
