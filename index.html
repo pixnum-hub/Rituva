@@ -4,269 +4,220 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva – Weather & AQI Intelligence</title>
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 <style>
-:root {
-  --bg-light: linear-gradient(135deg,#667eea,#764ba2);
-  --bg-dark: #121212;
-  --bg-oled: #000;
-  --card-light: rgba(255,255,255,.25);
-  --card-dark: #111;
-  --button-light: rgba(255,255,255,.35);
-  --button-dark: #1f1f1f;
-  --aqi-good: #43a047;
-  --aqi-moderate: #ffeb3b;
-  --aqi-poor: #f44336;
+*{box-sizing:border-box;font-family:system-ui}
+body{
+margin:0;min-height:100vh;display:flex;justify-content:center;
+padding:12px;background:linear-gradient(135deg,#667eea,#764ba2)
 }
+.app{
+width:100%;max-width:390px;padding:16px;border-radius:22px;
+background:rgba(255,255,255,.18);backdrop-filter:blur(16px)
+}
+input,button{
+width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px
+}
+button{font-weight:bold;background:rgba(255,255,255,.35)}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{
+background:rgba(255,255,255,.25);
+border-radius:14px;padding:10px;text-align:center;font-size:13px
+}
+.big{font-size:26px;font-weight:bold}
+#temp{font-size:48px;font-weight:800;text-align:center}
 
-*{box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont}
-body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:12px;background:var(--bg-light)}
-body.dark{background:var(--bg-dark);color:#fff}
-body.oled{background:var(--bg-oled);color:#fff}
-
-.app{width:100%;max-width:420px;padding:16px;border-radius:22px;background:var(--card-light);backdrop-filter:blur(16px)}
-body.dark .app, body.oled .app{background:var(--card-dark)}
-
-input,button{width:100%;padding:16px;border-radius:14px;border:none;margin-bottom:14px;font-size:16px}
-button{font-weight:600;background:var(--button-light)}
-body.dark button, body.oled button{background:var(--button-dark);color:#fff}
-
-.section{margin-bottom:20px}
-.details{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--card-light);border-radius:16px;padding:14px;text-align:center;font-size:15px;transition:0.3s;}
-body.dark .card,body.oled .card{background:var(--card-dark)}
-.big{font-size:32px;font-weight:700}
-#temp{font-size:58px;font-weight:800;text-align:center}
-
-/* AQI Glow */
-#aqiValue.good{color:var(--aqi-good);text-shadow:0 0 8px var(--aqi-good);}
-#aqiValue.moderate{color:var(--aqi-moderate);text-shadow:0 0 12px var(--aqi-moderate);}
-#aqiValue.poor{color:var(--aqi-poor);text-shadow:0 0 16px var(--aqi-poor);}
-
-.hourly{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px}
-.hour{display:flex;flex-direction:column;align-items:center;font-size:12px}
-.bar{width:22px;border-radius:8px 8px 0 0}
+.hourly{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.hour{display:flex;flex-direction:column;align-items:center;font-size:10px}
+.bar{width:18px;border-radius:6px 6px 0 0}
 .bar.temp{background:#ff7043}
 .bar.aqi{background:#43a047}
 .bar.rain{background:#42a5f5}
 
-#map{height:280px;border-radius:18px}
-footer{text-align:center;font-size:12px;margin-top:16px}
+#map{height:260px;border-radius:16px}
+
+/* DARK + OLED */
+body.dark{background:#121212}
+body.oled{background:#000}
+body.dark .app,body.oled .app{background:#000}
+body.dark *,body.oled *{color:#fff}
+body.dark input,body.dark button,
+body.oled input,body.oled button{background:#1f1f1f;color:#fff}
 </style>
 </head>
+
 <body>
 <div class="app">
-  <h1>🌦 Rituva</h1>
-  <button id="themeBtn">🌙 Theme</button>
 
-  <div class="section">
-    <input id="cityInput" placeholder="Search city" />
-    <button id="searchBtn">Search</button>
-    <button id="locBtn">📍 Use My Location</button>
-  </div>
+<h1>🌦 Rituva</h1>
+<button id="themeBtn">🌙 Dark Mode</button>
 
-  <div class="section">
-    <h2 id="location">Loading…</h2>
-    <div id="temp">--°C</div>
-  </div>
+<input id="cityInput" placeholder="Search city">
+<button onclick="searchCity()">Search</button>
+<button onclick="useLocation()">📍 Use My Location</button>
 
-  <div class="section details">
-    <div class="card"><h4>AQI</h4><div id="aqiValue" class="big">--</div><div id="aqiLabel">--</div></div>
-    <div class="card"><h4>Wind</h4><div id="wind">--</div></div>
-    <div class="card"><h4>Rain</h4><div id="rainNow">--</div></div>
-    <div class="card"><h4>Humidity</h4><div id="humidity">--</div></div>
-    <div class="card"><h4>Pressure</h4><div id="pressure">--</div></div>
-    <div class="card"><h4>Elevation</h4><div id="elevation">--</div></div>
-    <div class="card"><h4>UV Index</h4><div id="uvIndex">--</div></div>
-  </div>
+<h2 id="location">Loading…</h2>
+<div id="temp">--°C</div>
 
-  <div class="section">
-    <h3>🌫 AQI Intelligence</h3>
-    <div class="details" id="aqiInsights">
-      <div class="card" id="aqiHealth">Health Impact: --</div>
-      <div class="card" id="aqiAdvice">Advice: --</div>
-      <div class="card" id="aqiTrend">Trend: --</div>
-      <div class="card" id="aqiDominant">Dominant: --</div>
-      <div class="card" id="aqiMask">Mask: --</div>
-    </div>
-  </div>
+<div class="details">
+  <div class="card"><h4>AQI</h4><div id="aqiValue" class="big">--</div><div id="aqiLabel">--</div></div>
+  <div class="card"><h4>Wind</h4><div id="wind">--</div></div>
+  <div class="card"><h4>Rain</h4><div id="rainNow">-- mm</div></div>
+  <div class="card"><h4>Humidity</h4><div id="humidity">-- %</div></div>
+  <div class="card"><h4>Dew Point</h4><div id="dew">-- °C</div></div>
+</div>
 
-  <div class="section">
-    <h3>☔ Rain Intelligence</h3>
-    <div class="details" id="rainIntel">
-      <div class="card" id="rainStatus">Status: --</div>
-      <div class="card" id="rainAdvice">Advice: --</div>
-      <div class="card" id="rainProbability">Probability: --%</div>
-      <div class="card" id="rainAlert">Alert: --</div>
-    </div>
-  </div>
+<h3>🌫 AQI Insights</h3>
+<div class="details" id="aqiInsights"></div>
 
-  <div class="section">
-    <h3>📈 AQI (24H)</h3><div class="hourly" id="aqiGraph"></div>
-    <h3>🌡 Temperature (24H)</h3><div class="hourly" id="tempGraph"></div>
-    <h3>🌧 Rain (24H)</h3><div class="hourly" id="rainGraph"></div>
-  </div>
+<h3>☔ Rain Intelligence</h3>
+<div class="details" id="rainIntel"></div>
 
-  <div class="section">
-    <h3>📅 7-Day Temperature</h3>
-    <div class="details" id="temp7d"></div>
-  </div>
+<h3>📈 AQI (24H)</h3>
+<div class="hourly" id="aqiGraph"></div>
 
-  <div class="section">
-    <h3>🗺 Pollution Intelligence Map</h3>
-    <div id="map"></div>
-  </div>
+<h3>🌡 Temperature (24H)</h3>
+<div class="hourly" id="tempGraph"></div>
 
-  <footer>© Manik Roy</footer>
+<h3>🌧 Precipitation (24H)</h3>
+<div class="hourly" id="rainGraph"></div>
+
+<h3>🗺 Pollution Heatmap</h3>
+<div id="map"></div>
+
+<footer style="text-align:center;font-size:11px;margin-top:12px">
+© Manik Roy 2025. All Rights Reserved.
+</footer>
+
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
 <script>
-const $ = id => document.getElementById(id);
-let theme = localStorage.getItem('theme') || "light";
-document.body.className = theme;
-$("themeBtn").onclick = () => {
-    theme = theme==="light"?"dark":theme==="dark"?"oled":"light";
-    document.body.className = theme;
-    localStorage.setItem('theme', theme);
-};
-
+function $(i){return document.getElementById(i)}
+function avg(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length}
 function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
-function last24(arr){return arr?arr.slice(-24):[]}
+function last24(a){return a.slice(Math.max(0,a.length-24))}
 function hourLabel(i){let d=new Date();d.setHours(d.getHours()-23+i);return d.getHours()+":00"}
+
+/* BAR RENDER */
 function renderBars(el,data,max,cls){
-    el.innerHTML="";
-    data.forEach((v,i)=>{
-        let h=Math.max(4,(v/max)*120);
-        el.innerHTML+=`<div class='hour' title='${v}'><div class='bar ${cls}' style='height:${h}px'></div><small>${hourLabel(i)}</small></div>`;
-    });
-}
-function render7(max,min){
-    $("temp7d").innerHTML="";
-    max.forEach((v,i)=>$("temp7d").innerHTML+=`<div class='card'>Day ${i+1}<br><b>${v}° / ${min[i]}°</b></div>`);
-}
-
-// Map
-let map, heat, lastLat, lastLon;
-async function fetchAQIPoints(lat, lon, spacing){
-    let points = [];
-    for(let dx=-0.05; dx<=0.05; dx+=spacing){
-        for(let dy=-0.05; dy<=0.05; dy+=spacing){
-            points.push([lat+dx, lon+dy]);
-        }
-    }
-    const aqiData = await Promise.all(points.map(async p=>{
-        try{
-            const r = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p[0]}&longitude=${p[1]}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
-            const pm25 = r.hourly.pm2_5.slice(-1)[0]||0;
-            const pm10 = r.hourly.pm10.slice(-1)[0]||0;
-            return [p[0], p[1], Math.max(pm25,pm10)/300];
-        }catch(e){return null;}
-    }));
-    return aqiData.filter(p=>p);
+  el.innerHTML="";
+  for(let i=0;i<data.length;i++){
+    let h=Math.max(4,(data[i]/max)*120);
+    el.innerHTML+=`
+      <div class="hour">
+        <div class="bar ${cls}" style="height:${h}px"></div>
+        <small>${hourLabel(i)}</small>
+      </div>`;
+  }
 }
 
-async function drawMapAdaptive(lat, lon){
-    lastLat = lat;
-    lastLon = lon;
-
-    if(!map){
-        map = L.map("map").setView([lat, lon], 10);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-    } else {
-        map.setView([lat, lon], 10);
-    }
-
-    if(heat){map.removeLayer(heat); heat=null;}
-    async function redraw(){
-        const zoom = map.getZoom();
-        const spacing = zoom>12 ? 0.005 : zoom>10 ? 0.01 : 0.02;
-        const points = await fetchAQIPoints(lastLat,lastLon,spacing);
-        if(heat) map.removeLayer(heat);
-        heat = L.heatLayer(points,{radius:45,blur:25,gradient:{0.2:"#00e676",0.5:"#ffeb3b",1:"#f44336"}}).addTo(map);
-    }
-    map.off('zoomend');
-    map.on('zoomend', redraw);
-    await redraw();
-}
-
-// AQI
-function calculateAQI(pm25, pm10){
-    let aqi25 = pm25 <= 12 ? Math.round(pm25*50/12)
-                : pm25 <= 35.4 ? Math.round((pm25-12.1)*(100-51)/(35.4-12.1)+51)
-                : 150;
-    let aqi10 = pm10 <= 54 ? Math.round(pm10*50/54)
-                : pm10 <= 154 ? Math.round((pm10-55)*(100-51)/(154-55)+51)
-                : 150;
-    return Math.max(aqi25, aqi10);
-}
-function updateAQIGlow(aqi){
-    $("aqiValue").className = "big "+(aqi<=50?"good":aqi<=100?"moderate":"poor");
-}
-
-// Load weather & AQI
-async function load(lat, lon, name){
-    $("location").textContent = name;
-    try{
-        const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,relative_humidity_2m,pressure_msl,uv_index&daily=temperature_2m_max,temperature_2m_min&timezone=auto`).then(r=>r.json());
-        const a = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
-
-        $("temp").textContent=w.current_weather.temperature+"°C";
-        $("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
-        $("humidity").textContent=w.hourly.relative_humidity_2m.slice(-1)[0]+"%";
-        $("rainNow").textContent=w.hourly.precipitation.slice(-1)[0]+" mm";
-        $("pressure").textContent=w.hourly.pressure_msl.slice(-1)[0]+" hPa";
-        $("elevation").textContent=Math.round(w.elevation||0)+" m";
-        $("uvIndex").textContent=w.hourly.uv_index.slice(-1)[0]||"--";
-
-        const pm25 = last24(a.hourly.pm2_5);
-        const pm10 = last24(a.hourly.pm10);
-        const aqi = calculateAQI(pm25[pm25.length-1], pm10[pm10.length-1]);
-
-        $("aqiValue").textContent = aqi;
-        updateAQIGlow(aqi);
-        $("aqiLabel").textContent = aqi<=50?"Good":aqi<=100?"Moderate":"Poor";
-        $("aqiHealth").textContent = aqi<=50?"Health Impact: Minimal":aqi<=100?"Health Impact: Sensitive groups affected":"Health Impact: Unhealthy";
-        $("aqiAdvice").textContent = aqi<=50?"Advice: Enjoy outdoor activities":aqi<=100?"Advice: Limit prolonged exertion":"Advice: Avoid outdoor exposure";
-        $("aqiTrend").textContent = (pm25[pm25.length-1]>pm25[0])?"Trend: Rising ↑":"Trend: Falling ↓";
-        $("aqiDominant").textContent = (pm25[pm25.length-1]>pm10[pm10.length-1])?"Dominant: PM2.5":"Dominant: PM10";
-        $("aqiMask").textContent = aqi<=100?"Mask: Optional":"Mask: N95";
-
-        const rainNowVal=w.hourly.precipitation.slice(-1)[0];
-        $("rainStatus").textContent = rainNowVal>0?`Status: Raining (${rainNowVal} mm)`:"Status: No Rain";
-        $("rainAdvice").textContent = rainNowVal>5?"Advice: Stay indoors":rainNowVal>0?"Advice: Carry umbrella":"Advice: No precautions needed";
-        $("rainProbability").textContent = `Probability: ${Math.min(100, Math.round(Math.max(...w.hourly.precipitation)*10))}%`;
-        $("rainAlert").textContent = rainNowVal>10?"Alert: Heavy Rain":rainNowVal>3?"Alert: Moderate Rain":"Alert: None";
-
-        renderBars($("aqiGraph"),pm25,300,"aqi");
-        renderBars($("tempGraph"),last24(w.hourly.temperature_2m),45,"temp");
-        renderBars($("rainGraph"),last24(w.hourly.precipitation),10,"rain");
-        render7(w.daily.temperature_2m_max,w.daily.temperature_2m_min);
-
-        await drawMapAdaptive(lat, lon);
-
-    }catch(e){alert("Failed to load data. Please check your connection.");console.error(e);}
-}
-
-// Search & Location
-$("searchBtn").onclick = async () => {
-    const q = $("cityInput").value.trim();
-    if(!q) return;
-    const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
-    if(g.results) load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
-};
-$("locBtn").onclick = () => {
-    navigator.geolocation.getCurrentPosition(
-        p => load(p.coords.latitude, p.coords.longitude, "Current Location"),
-        () => alert("Location permission denied")
-    );
+/* THEME */
+let theme="light";
+$("themeBtn").onclick=()=>{
+theme=theme==="light"?"dark":theme==="dark"?"oled":"light";
+document.body.className=theme==="light"?"":theme;
 };
 
-// Initial load
+/* AQI CPCB */
+function calc(c,b){return Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2])}
+function PM25(c){let b=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];for(let i=0;i<b.length;i++)if(c<=b[i][1])return calc(c,b[i])}
+function PM10(c){let b=[[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]];for(let i=0;i<b.length;i++)if(c<=b[i][1])return calc(c,b[i])}
+
+/* MAP */
+let map,heat;
+function drawMap(lat,lon,aqi){
+  if(!map){
+    map=L.map("map").setView([lat,lon],11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  }
+  if(heat)map.removeLayer(heat);
+  let w=aqi<=50?.2:aqi<=100?.4:aqi<=150?.6:aqi<=200?.8:1;
+  heat=L.heatLayer([
+    [lat,lon,w],
+    [lat+0.02,lon+0.02,w*0.8],
+    [lat-0.02,lon-0.02,w*0.7]
+  ],{radius:40}).addTo(map);
+}
+
+/* LOAD DATA */
+async function load(lat,lon,name){
+  $("location").textContent=name;
+
+  const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,dew_point_2m,cape&timezone=auto`).then(r=>r.json());
+  const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
+
+  $("temp").textContent=w.current_weather.temperature+"°C";
+  $("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
+
+  const pm25=last24(a.hourly.pm2_5);
+  const pm10=last24(a.hourly.pm10);
+  const temp24=last24(w.hourly.temperature_2m);
+  const rain=last24(w.hourly.precipitation);
+  const prob=last24(w.hourly.precipitation_probability);
+  const hum=last24(w.hourly.relative_humidity_2m);
+  const dew=last24(w.hourly.dew_point_2m);
+  const cape=last24(w.hourly.cape);
+
+  $("humidity").textContent=hum[hum.length-1]+" %";
+  $("dew").textContent=dew[dew.length-1]+" °C";
+  $("rainNow").textContent=rain[rain.length-1]+" mm";
+
+  const aqi24=pm25.map((v,i)=>Math.max(PM25(v),PM10(pm10[i])));
+  const aqi=Math.round(avg(aqi24));
+
+  $("aqiValue").textContent=aqi;
+  $("aqiLabel").textContent=aqi<=50?"Good":aqi<=100?"Satisfactory":aqi<=200?"Moderate":aqi<=300?"Poor":"Severe";
+
+  renderBars($("aqiGraph"),aqi24,300,"aqi");
+  renderBars($("tempGraph"),temp24,45,"temp");
+  renderBars($("rainGraph"),rain,10,"rain");
+
+  const trend=aqi24[aqi24.length-1]>aqi24[0]?"Rising ↑":"Falling ↓";
+  $("aqiInsights").innerHTML=`
+    <div class="card">Category<br><b>${$("aqiLabel").textContent}</b></div>
+    <div class="card">AQI Value<br><b>${aqi}</b></div>
+    <div class="card">Dominant Pollutant<br><b>${PM25(avg(pm25))>PM10(avg(pm10))?"PM2.5":"PM10"}</b></div>
+    <div class="card">Trend (24H)<br><b>${trend}</b></div>
+    <div class="card">Health Risk<br><b>${aqi>200?"High":"Moderate"}</b></div>
+    <div class="card">Mask Advice<br><b>${aqi<=100?"Optional":"N95 Recommended"}</b></div>
+  `;
+
+  const rain3=rain.slice(rain.length-3).reduce((a,b)=>a+b,0);
+  $("rainIntel").innerHTML=`
+    <div class="card">Rain Probability<br><b>${Math.max(...prob.slice(prob.length-3))}%</b></div>
+    <div class="card">Rain Alert (3H)<br><b>${rain3>5?"Heavy":rain3>1?"Light":"None"}</b></div>
+    <div class="card">Thunderstorm Risk<br><b>${Math.max(...cape)>2000?"Severe":Math.max(...cape)>1000?"Possible":"Low"}</b></div>
+    <div class="card">Humidity Avg<br><b>${Math.round(avg(hum))}%</b></div>
+  `;
+
+  drawMap(lat,lon,aqi);
+}
+
+async function searchCity(){
+  const q=$("cityInput").value;
+  if(!q)return;
+  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+  load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
+}
+function useLocation(){
+  navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"));
+}
+
+/* DEFAULT: KOLKATA */
 load(22.5726,88.3639,"Kolkata, India");
+
+/* SERVICE WORKER */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
 </script>
 </body>
 </html>
