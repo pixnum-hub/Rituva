@@ -1,13 +1,25 @@
 {
   "name": "Rituva – Weather & AQI Intelligence",
   "short_name": "Rituva",
-  "start_url": "/index.html",
+  "description": "Real-time weather, AQI insights, rain alerts, 24h and 7-day forecasts with pollution heatmap",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "description": "Weather, AQI, and rain intelligence with adaptive AQI heatmap.",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "categories": ["weather", "health", "utilities"],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
