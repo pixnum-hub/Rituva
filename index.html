@@ -8,8 +8,6 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
 *{box-sizing:border-box;font-family:system-ui}
 body{
@@ -30,7 +28,7 @@ background:rgba(255,255,255,.25);
 border-radius:14px;padding:10px;text-align:center;font-size:13px
 }
 .big{font-size:26px;font-weight:bold}
-#temp{font-size:48px;font-weight:800;text-align:center}
+#temp{font-size:52px;font-weight:800;text-align:center}
 
 .hourly{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .hour{display:flex;flex-direction:column;align-items:center;font-size:10px}
@@ -38,8 +36,6 @@ border-radius:14px;padding:10px;text-align:center;font-size:13px
 .bar.temp{background:#ff7043}
 .bar.aqi{background:#43a047}
 .bar.rain{background:#42a5f5}
-
-#map{height:260px;border-radius:16px}
 
 /* DARK + OLED */
 body.dark{background:#121212}
@@ -87,8 +83,17 @@ body.oled input,body.oled button{background:#1f1f1f;color:#fff}
 <h3>🌧 Precipitation (24H)</h3>
 <div class="hourly" id="rainGraph"></div>
 
-<h3>🗺 Pollution Heatmap</h3>
-<div id="map"></div>
+<h3>📅 7-Day Temperature (Min / Max)</h3>
+<div class="details" id="temp7d"></div>
+
+<h3>🌧 7-Day Rain Forecast</h3>
+<div class="details" id="rain7d"></div>
+
+<h3>🌫 7-Day AQI Forecast</h3>
+<div class="details" id="aqi7d"></div>
+
+<h3>🔥❄ Weekly Extreme Alert</h3>
+<div class="details" id="extremeAlert"></div>
 
 <footer style="text-align:center;font-size:11px;margin-top:12px">
 © Manik Roy 2025. All Rights Reserved.
@@ -96,128 +101,104 @@ body.oled input,body.oled button{background:#1f1f1f;color:#fff}
 
 </div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
 <script>
-function $(i){return document.getElementById(i)}
-function avg(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length}
-function compass(d){return["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8]}
-function last24(a){return a.slice(Math.max(0,a.length-24))}
-function hourLabel(i){let d=new Date();d.setHours(d.getHours()-23+i);return d.getHours()+":00"}
-
-/* BAR RENDER */
-function renderBars(el,data,max,cls){
-  el.innerHTML="";
-  for(let i=0;i<data.length;i++){
-    let h=Math.max(4,(data[i]/max)*120);
-    el.innerHTML+=`
-      <div class="hour">
-        <div class="bar ${cls}" style="height:${h}px"></div>
-        <small>${hourLabel(i)}</small>
-      </div>`;
-  }
-}
-
-/* THEME */
-let theme="light";
-$("themeBtn").onclick=()=>{
-theme=theme==="light"?"dark":theme==="dark"?"oled":"light";
-document.body.className=theme==="light"?"":theme;
-};
+const $=i=>document.getElementById(i);
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const last24=a=>a.slice(-24);
+const compass=d=>["N","NE","E","SE","S","SW","W","NW"][Math.round(d/45)%8];
 
 /* AQI CPCB */
-function calc(c,b){return Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2])}
-function PM25(c){let b=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];for(let i=0;i<b.length;i++)if(c<=b[i][1])return calc(c,b[i])}
-function PM10(c){let b=[[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]];for(let i=0;i<b.length;i++)if(c<=b[i][1])return calc(c,b[i])}
+const calc=(c,b)=>Math.round(((b[3]-b[2])/(b[1]-b[0]))*(c-b[0])+b[2]);
+const PM25=c=>{let b=[[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];for(let i of b)if(c<=i[1])return calc(c,i)};
+const PM10=c=>{let b=[[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,600,401,500]];for(let i of b)if(c<=i[1])return calc(c,i)};
 
-/* MAP */
-let map,heat;
-function drawMap(lat,lon,aqi){
-  if(!map){
-    map=L.map("map").setView([lat,lon],11);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  }
-  if(heat)map.removeLayer(heat);
-  let w=aqi<=50?.2:aqi<=100?.4:aqi<=150?.6:aqi<=200?.8:1;
-  heat=L.heatLayer([
-    [lat,lon,w],
-    [lat+0.02,lon+0.02,w*0.8],
-    [lat-0.02,lon-0.02,w*0.7]
-  ],{radius:40}).addTo(map);
+function bars(el,data,max,cls){
+el.innerHTML="";
+data.forEach(v=>el.innerHTML+=`<div class="hour"><div class="bar ${cls}" style="height:${Math.max(4,(v/max)*120)}px"></div></div>`);
 }
 
-/* LOAD DATA */
+let theme="light";
+themeBtn.onclick=()=>{theme=theme==="light"?"dark":theme==="dark"?"oled":"light";document.body.className=theme==="light"?"":theme};
+
 async function load(lat,lon,name){
-  $("location").textContent=name;
+location.textContent=name;
 
-  const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,dew_point_2m,cape&timezone=auto`).then(r=>r.json());
-  const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
+const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,dew_point_2m,cape&daily=temperature_2m_min,temperature_2m_max,precipitation_sum&timezone=auto`).then(r=>r.json());
 
-  $("temp").textContent=w.current_weather.temperature+"°C";
-  $("wind").textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
+const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10&timezone=auto`).then(r=>r.json());
 
-  const pm25=last24(a.hourly.pm2_5);
-  const pm10=last24(a.hourly.pm10);
-  const temp24=last24(w.hourly.temperature_2m);
-  const rain=last24(w.hourly.precipitation);
-  const prob=last24(w.hourly.precipitation_probability);
-  const hum=last24(w.hourly.relative_humidity_2m);
-  const dew=last24(w.hourly.dew_point_2m);
-  const cape=last24(w.hourly.cape);
+temp.textContent=w.current_weather.temperature+"°C";
+wind.textContent=w.current_weather.windspeed+" km/h "+compass(w.current_weather.winddirection);
+humidity.textContent=w.hourly.relative_humidity_2m.at(-1)+" %";
+dew.textContent=w.hourly.dew_point_2m.at(-1)+" °C";
+rainNow.textContent=w.hourly.precipitation.at(-1)+" mm";
 
-  $("humidity").textContent=hum[hum.length-1]+" %";
-  $("dew").textContent=dew[dew.length-1]+" °C";
-  $("rainNow").textContent=rain[rain.length-1]+" mm";
+/* AQI */
+let pm25=last24(a.hourly.pm2_5), pm10=last24(a.hourly.pm10);
+let aqi24=pm25.map((v,i)=>Math.max(PM25(v),PM10(pm10[i])));
+let aqi=Math.round(avg(aqi24));
+aqiValue.textContent=aqi;
+aqiLabel.textContent=aqi<=50?"Good":aqi<=100?"Satisfactory":aqi<=200?"Moderate":aqi<=300?"Poor":"Severe";
 
-  const aqi24=pm25.map((v,i)=>Math.max(PM25(v),PM10(pm10[i])));
-  const aqi=Math.round(avg(aqi24));
+/* AQI INSIGHTS */
+aqiInsights.innerHTML=`
+<div class="card">Category<br><b>${aqiLabel.textContent}</b></div>
+<div class="card">AQI Value<br><b>${aqi}</b></div>
+<div class="card">Dominant<br><b>${PM25(avg(pm25))>PM10(avg(pm10))?"PM2.5":"PM10"}</b></div>
+<div class="card">24H Trend<br><b>${aqi24.at(-1)>aqi24[0]?"Rising ↑":"Falling ↓"}</b></div>
+<div class="card">Health Risk<br><b>${aqi>200?"High":"Moderate"}</b></div>
+<div class="card">Mask Advice<br><b>${aqi<=100?"Optional":"N95 Recommended"}</b></div>`;
 
-  $("aqiValue").textContent=aqi;
-  $("aqiLabel").textContent=aqi<=50?"Good":aqi<=100?"Satisfactory":aqi<=200?"Moderate":aqi<=300?"Poor":"Severe";
+/* GRAPHS */
+bars(aqiGraph,aqi24,300,"aqi");
+bars(tempGraph,last24(w.hourly.temperature_2m),45,"temp");
+bars(rainGraph,last24(w.hourly.precipitation),10,"rain");
 
-  renderBars($("aqiGraph"),aqi24,300,"aqi");
-  renderBars($("tempGraph"),temp24,45,"temp");
-  renderBars($("rainGraph"),rain,10,"rain");
+/* RAIN INTELLIGENCE */
+let prob=last24(w.hourly.precipitation_probability);
+let cape=last24(w.hourly.cape);
+let rain3=w.hourly.precipitation.slice(-3).reduce((a,b)=>a+b,0);
+rainIntel.innerHTML=`
+<div class="card">Rain Probability<br><b>${Math.max(...prob)}%</b></div>
+<div class="card">Rain Alert (3H)<br><b>${rain3>10?"Heavy":rain3>3?"Moderate":rain3>0?"Light":"None"}</b></div>
+<div class="card">Thunderstorm Risk<br><b>${Math.max(...cape)>2000?"Severe":Math.max(...cape)>1000?"Possible":"Low"}</b></div>
+<div class="card">Humidity Avg<br><b>${Math.round(avg(w.hourly.relative_humidity_2m))}%</b></div>`;
 
-  const trend=aqi24[aqi24.length-1]>aqi24[0]?"Rising ↑":"Falling ↓";
-  $("aqiInsights").innerHTML=`
-    <div class="card">Category<br><b>${$("aqiLabel").textContent}</b></div>
-    <div class="card">AQI Value<br><b>${aqi}</b></div>
-    <div class="card">Dominant Pollutant<br><b>${PM25(avg(pm25))>PM10(avg(pm10))?"PM2.5":"PM10"}</b></div>
-    <div class="card">Trend (24H)<br><b>${trend}</b></div>
-    <div class="card">Health Risk<br><b>${aqi>200?"High":"Moderate"}</b></div>
-    <div class="card">Mask Advice<br><b>${aqi<=100?"Optional":"N95 Recommended"}</b></div>
-  `;
+/* 7-DAY TEMP */
+temp7d.innerHTML="";
+w.daily.temperature_2m_min.forEach((m,i)=>temp7d.innerHTML+=`<div class="card">Day ${i+1}<br><b>${m}°C / ${w.daily.temperature_2m_max[i]}°C</b></div>`);
 
-  const rain3=rain.slice(rain.length-3).reduce((a,b)=>a+b,0);
-  $("rainIntel").innerHTML=`
-    <div class="card">Rain Probability<br><b>${Math.max(...prob.slice(prob.length-3))}%</b></div>
-    <div class="card">Rain Alert (3H)<br><b>${rain3>5?"Heavy":rain3>1?"Light":"None"}</b></div>
-    <div class="card">Thunderstorm Risk<br><b>${Math.max(...cape)>2000?"Severe":Math.max(...cape)>1000?"Possible":"Low"}</b></div>
-    <div class="card">Humidity Avg<br><b>${Math.round(avg(hum))}%</b></div>
-  `;
+/* 7-DAY RAIN */
+rain7d.innerHTML="";
+w.daily.precipitation_sum.forEach((r,i)=>rain7d.innerHTML+=`<div class="card">Day ${i+1}<br><b>${r} mm</b><br>${r>50?"Heavy":r>10?"Moderate":r>1?"Light":"No Rain"}</div>`);
 
-  drawMap(lat,lon,aqi);
+/* 7-DAY AQI */
+aqi7d.innerHTML="";
+for(let d=0;d<7;d++){
+let s25=a.hourly.pm2_5.slice(d*24,(d+1)*24);
+let s10=a.hourly.pm10.slice(d*24,(d+1)*24);
+let v=Math.round(avg(s25.map((x,i)=>Math.max(PM25(x),PM10(s10[i])))));
+aqi7d.innerHTML+=`<div class="card">Day ${d+1}<br><b>${v}</b><br>${v<=50?"Good":v<=100?"Satisfactory":v<=200?"Moderate":v<=300?"Poor":"Severe"}</div>`;
+}
+
+/* HEAT / COLD */
+let max=Math.max(...w.daily.temperature_2m_max);
+let min=Math.min(...w.daily.temperature_2m_min);
+extremeAlert.innerHTML=`
+<div class="card">Max Temp<br><b>${max}°C</b></div>
+<div class="card">Min Temp<br><b>${min}°C</b></div>
+<div class="card"><b>${max>=40?"🔥 Heatwave":min<=10?"❄ Coldwave":"Normal"}</b></div>`;
 }
 
 async function searchCity(){
-  const q=$("cityInput").value;
-  if(!q)return;
-  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
-  load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
+let q=cityInput.value;if(!q)return;
+let g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
 }
-function useLocation(){
-  navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"));
-}
+function useLocation(){navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"Current Location"))}
 
-/* DEFAULT: KOLKATA */
 load(22.5726,88.3639,"Kolkata, India");
-
-/* SERVICE WORKER */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
-}
+if("serviceWorker"in navigator){navigator.serviceWorker.register("sw.js")}
 </script>
 </body>
 </html>
