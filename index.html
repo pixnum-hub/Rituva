@@ -28,9 +28,7 @@ main{
   position:relative;
 }
 input,button{
-  width:100%;
   padding:14px;
-  margin-bottom:10px;
   border:none;
   border-radius:var(--radius);
   background:#111;
@@ -102,6 +100,22 @@ body.light{
 }
 body.light input,body.light button{background:#ddd;color:#000}
 body.light #modeToggle{background:#eee;color:#000}
+
+/* Top controls realignment */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.controls input {
+  flex: 1 1 60%;
+  min-width: 120px;
+}
+.controls button {
+  flex: 1 1 18%;
+  min-width: 80px;
+}
 </style>
 </head>
 
@@ -112,9 +126,11 @@ body.light #modeToggle{background:#eee;color:#000}
 
 <h1>🌤 Rituva</h1>
 
-<input id="search" placeholder="Search city">
-<button onclick="searchCity()">Search</button>
-<button onclick="useMyLocation()">📍 Use My Location</button>
+<div class="controls">
+  <input id="search" placeholder="Search city">
+  <button onclick="searchCity()">Search</button>
+  <button onclick="useMyLocation()">📍</button>
+</div>
 
 <h2 id="location">Loading…</h2>
 <div id="temperature" class="big-temp">–°C</div>
@@ -182,7 +198,6 @@ body.light #modeToggle{background:#eee;color:#000}
 <div class="card" id="week"></div>
 
 <footer>
-Data: Open-Meteo Weather & Air Quality<br>
 © Manik Roy 2025. All Rights Reserved.
 </footer>
 
