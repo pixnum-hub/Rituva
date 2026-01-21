@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
 
-<link rel="manifest" href="manifest.json">
+<!-- Embedded Manifest -->
+<link rel="manifest" href="data:application/manifest+json,{
+  \"name\":\"Rituva – India Weather Intelligence\",
+  \"short_name\":\"Rituva\",
+  \"start_url\":\"./\",
+  \"display\":\"standalone\",
+  \"background_color\":\"#000000\",
+  \"theme_color\":\"#000000\",
+  \"orientation\":\"portrait\",
+  \"icons\":[
+    {\"src\":\"icon-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"},
+    {\"src\":\"icon-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\"}
+  ]
+}">
+
 <meta name="theme-color" content="#000000">
 
 <style>
@@ -55,6 +69,14 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
   <div class="hero-temp" id="temp">--°C</div>
 </div>
 
+<!-- 24h Temperature -->
+<div class="section-title">🌡 Temperature (24h)</div>
+<div class="grid">
+  <div class="card"><small>Next 24h Min</small><b id="temp24Min">--</b></div>
+  <div class="card"><small>Next 24h Max</small><b id="temp24Max">--</b></div>
+</div>
+
+<!-- Conditions -->
 <div class="section-title">🌧 Conditions</div>
 <div class="grid">
   <div class="card"><small>Humidity</small><b id="humidity">--</b></div>
@@ -67,6 +89,7 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
   <div class="card"><small>Cyclone Alert</small><b id="cyclone">--</b></div>
 </div>
 
+<!-- Air Quality -->
 <div class="section-title">🌬 Air Quality</div>
 <div class="grid">
   <div class="card full"><small>PM2.5 (µg/m³)</small><b id="pm25">--</b></div>
@@ -75,18 +98,34 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
   <div class="card"><small>Asthma</small><b id="aqiAsthma">--</b></div>
 </div>
 
+<!-- Hourly Rain Chart -->
 <div class="section-title">📊 Hourly Rain</div>
 <div id="rainChart"></div>
 
+<!-- 7-day Rain -->
 <div class="section-title">📅 7-Day Rain</div>
 <div class="grid" id="weeklyRain"></div>
 
+<!-- 7-day Temperature -->
+<div class="section-title">📅 7-Day Temperature</div>
+<div class="grid" id="weeklyTemp"></div>
+
+<!-- Monsoon Intelligence -->
 <div class="section-title">🌧 Monsoon Intelligence</div>
 <div class="grid">
   <div class="card"><small>Monsoon Mode</small><b id="monsoon">--</b></div>
   <div class="card"><small>Monsoon Severity</small><b id="msi">--</b></div>
 </div>
 
+<!-- Heat & Comfort -->
+<div class="section-title">🔥 Heat & Comfort</div>
+<div class="grid">
+  <div class="card"><small>Heatwave Index</small><b id="heatwave">--</b></div>
+  <div class="card"><small>Night Discomfort</small><b id="nightDiscomfort">--</b></div>
+  <div class="card full"><small>Power Demand</small><b id="powerDemand">--</b></div>
+</div>
+
+<!-- Sun -->
 <div class="section-title">🌅 Sun</div>
 <div class="grid">
   <div class="card"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
@@ -97,15 +136,44 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
 </div>
 
 <script>
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js");
+// ==== SERVICE WORKER INLINE ====
+if('serviceWorker' in navigator){
+  const swCode=`
+  const CACHE='rituva-v1';
+  const ASSETS=['./','./index.html','./icon-192.png','./icon-512.png'];
+  self.addEventListener('install',e=>{
+    e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+    self.skipWaiting();
+  });
+  self.addEventListener('activate',e=>{
+    e.waitUntil(
+      caches.keys().then(keys=>Promise.all(keys.map(k=>k!==CACHE&&caches.delete(k))))
+    );
+    self.clients.claim();
+  });
+  self.addEventListener('fetch',e=>{
+    e.respondWith(
+      caches.match(e.request).then(r=>r||fetch(e.request).then(n=>{
+        if(e.request.url.startsWith('http')){
+          const c=n.clone();
+          caches.open(CACHE).then(cache=>cache.put(e.request,c));
+        }
+        return n;
+      }).catch(()=>r))
+    );
+  });`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob));
 }
 
+// ==== MAIN APP ====
 const el={};
 [
 "temp","humidity","wind","rainProb","rainIntensity","totalRain",
 "floodProb","roadRisk","cyclone","monsoon","msi","sun","updated",
-"pm25","aqiChild","aqiOld","aqiAsthma"
+"pm25","aqiChild","aqiOld","aqiAsthma",
+"temp24Min","temp24Max",
+"heatwave","nightDiscomfort","powerDemand"
 ].forEach(id=>el[id]=document.getElementById(id));
 
 function safeIndex(times){
@@ -131,11 +199,11 @@ async function load(lat,lon,name){
 document.getElementById("city").innerText=name;
 
 const w=await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset&current_weather=true&timezone=auto`
+\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset&current_weather=true&timezone=auto\`
 ).then(r=>r.json());
 
 const a=await fetch(
-`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
+\`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=\${lat}&longitude=\${lon}&hourly=pm2_5&timezone=auto\`
 ).then(r=>r.json()).catch(()=>null);
 
 const i=safeIndex(w.hourly.time);
@@ -152,9 +220,7 @@ el.humidity.innerText=h+"%";
 el.wind.innerText=Math.round(wind)+" km/h";
 el.rainProb.innerText=rp+"%";
 el.totalRain.innerText=totalRain.toFixed(1)+" mm";
-
-el.rainIntensity.innerText=
-totalRain<5?"Light":totalRain<25?"Moderate":"Heavy";
+el.rainIntensity.innerText=totalRain<5?"Light":totalRain<25?"Moderate":"Heavy";
 
 let flood=5;
 if(totalRain>=10)flood=20;
@@ -163,15 +229,11 @@ if(totalRain>=50)flood=75;
 if(totalRain>=100)flood=95;
 el.floodProb.innerText=flood+"%";
 
-el.roadRisk.innerText=
-totalRain>=40?"Flood Risk":totalRain>=20?"Avoid":totalRain>=5?"Caution":"Safe";
-
-el.cyclone.innerText=
-(wind>=45&&rp>=80&&totalRain>=30)?"Watch 🌀":"None";
+el.roadRisk.innerText=totalRain>=40?"Flood Risk":totalRain>=20?"Avoid":totalRain>=5?"Caution":"Safe";
+el.cyclone.innerText=(wind>=45&&rp>=80&&totalRain>=30)?"Watch 🌀":"None";
 
 const month=new Date().getMonth();
-el.monsoon.innerText=
-((month>=5&&month<=8)||totalRain>=15||rp>=60)?"Active 🌧️":"Inactive";
+el.monsoon.innerText=((month>=5&&month<=8)||totalRain>=15||rp>=60)?"Active 🌧️":"Inactive";
 
 let msi=0;
 msi+=Math.min(totalRain/10,5);
@@ -179,25 +241,70 @@ msi+=rp>=70?2:rp>=40?1:0;
 msi+=wind>=30?2:wind>=20?1:0;
 msi=Math.min(Math.round(msi),10);
 const label=msi>=9?"Extreme":msi>=7?"Heavy":msi>=5?"Active":msi>=3?"Normal":"Weak";
-el.msi.innerText=`${msi}/10 · ${label}`;
+el.msi.innerText=\`\${msi}/10 · \${label}\`;
 
+// AQI
 const pm=a?.hourly?.pm2_5?.[i] ?? a?.hourly?.pm2_5?.[0] ?? 0;
 el.pm25.innerText=Math.round(pm);
 el.aqiChild.innerText=pm>75?"High":pm>35?"Moderate":"Low";
 el.aqiOld.innerText=pm>100?"High":pm>50?"Moderate":"Low";
 el.aqiAsthma.innerText=pm>60?"High":"Low";
 
+// Hourly Rain Chart
 drawRainChart(hourlyRain);
 
+// 7-Day Rain
 const wr=document.getElementById("weeklyRain");
 wr.innerHTML="";
 for(let d=0;d<7;d++){
   const r=w.hourly.precipitation.slice(d*24,d*24+24).reduce((a,b)=>a+b,0);
-  wr.innerHTML+=`<div class="card"><small>Day ${d+1}</small><b>${r.toFixed(1)} mm</b></div>`;
+  wr.innerHTML+=\`<div class="card"><small>Day \${d+1}</small><b>\${r.toFixed(1)} mm</b></div>\`;
 }
 
-el.sun.innerText=
-w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16);
+// 7-Day Temperature
+const wt=document.getElementById("weeklyTemp");
+wt.innerHTML="";
+for(let d=0;d<7;d++){
+  const temps=w.hourly.temperature_2m.slice(d*24,d*24+24);
+  wt.innerHTML+=\`<div class="card"><small>Day \${d+1}</small><b>\${Math.min(...temps).toFixed(0)}° / \${Math.max(...temps).toFixed(0)}°</b></div>\`;
+}
+
+// 24h Temperature min/max
+const temps24=w.hourly.temperature_2m.slice(i,i+24);
+el.temp24Min.innerText=Math.min(...temps24).toFixed(0)+"°C";
+el.temp24Max.innerText=Math.max(...temps24).toFixed(0)+"°C";
+
+// Heatwave Index
+const dayMax=Math.max(...temps24);
+const nightMin=Math.min(...temps24.slice(18,24));
+let heatIndex=0;
+if(dayMax>=40) heatIndex=3;
+if(dayMax>=42) heatIndex=4;
+if(dayMax>=45) heatIndex=5;
+if(h>=60 && dayMax>=38) heatIndex+=1;
+heatIndex=Math.min(heatIndex,5);
+const heatLabel=heatIndex===5?"Extreme":heatIndex===4?"Severe":heatIndex===3?"Heatwave":heatIndex===2?"Stress":heatIndex===1?"Warm":"None";
+el.heatwave.innerText=\`\${heatIndex} · \${heatLabel}\`;
+
+// Night Discomfort
+let ndi=0;
+if(nightMin>=28) ndi=2;
+if(nightMin>=30) ndi=3;
+if(nightMin>=32) ndi=4;
+if(h>=70 && nightMin>=27) ndi+=1;
+ndi=Math.min(ndi,5);
+const ndiLabel=ndi>=4?"Very Poor":ndi>=3?"Poor":ndi>=2?"Moderate":ndi>=1?"Slight":"Comfortable";
+el.nightDiscomfort.innerText=\`\${ndi} · \${ndiLabel}\`;
+
+// Power Demand Forecast
+let demand="Normal";
+if(dayMax>=35) demand="High";
+if(dayMax>=38) demand="Very High";
+if(dayMax>=42) demand="Extreme";
+if(heatIndex>=4) demand+=" ⚠️";
+el.powerDemand.innerText=demand;
+
+el.sun.innerText=w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16);
 el.updated.innerText=new Date().toLocaleTimeString();
 }
 
@@ -206,13 +313,15 @@ navigator.geolocation.getCurrentPosition(
 p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
 ()=>load(22.57,88.36,"Kolkata"));
 }
+
 function searchCity(){
 const q=document.getElementById("search").value;
 if(!q)return;
-fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`)
+fetch(\`https://geocoding-api.open-meteo.com/v1/search?name=\${q}&count=1\`)
 .then(r=>r.json())
 .then(g=>g.results&&load(g.results[0].latitude,g.results[0].longitude,g.results[0].name));
 }
+
 useMyLocation();
 </script>
 </body>
