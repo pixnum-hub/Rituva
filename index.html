@@ -52,6 +52,9 @@ body{
 }
 
 /* HERO */
+.hero{
+  text-align:center;
+}
 .hero small{
   color:var(--muted);
   font-size:18px;
@@ -59,7 +62,7 @@ body{
 .hero-temp{
   font-size:84px;
   font-weight:800;
-  margin-bottom:22px;
+  margin:12px 0 22px;
 }
 
 /* SECTION */
@@ -105,12 +108,12 @@ footer{
 <div class="app">
 
 <div class="header">
-  <h1>🌦️ Rituva</h1>
+  <h1 id="title">🌦️ Rituva</h1>
 </div>
 
 <div class="search-box">
   <input id="search" placeholder="Search city"
-         onkeydown="if(event.key==='Enter')searchCity()">
+    onkeydown="if(event.key==='Enter')searchCity()">
   <button onclick="searchCity()">Search</button>
   <button onclick="useMyLocation()">📍 Use My Location</button>
 </div>
@@ -129,7 +132,7 @@ footer{
   <div class="card"><small>Next 24H Max</small><b id="nextMax">--</b></div>
 </div>
 
-<!-- CURRENT CONDITIONS -->
+<!-- CONDITIONS -->
 <div class="section-title">🌧 Conditions</div>
 <div class="grid">
   <div class="card"><small>Humidity</small><b id="humidity">--</b></div>
@@ -143,10 +146,7 @@ footer{
 <!-- AIR QUALITY -->
 <div class="section-title">🌬 Air Quality</div>
 <div class="grid">
-  <div class="card full">
-    <small>PM2.5 (µg/m³)</small>
-    <b id="pm25">--</b>
-  </div>
+  <div class="card full"><small>PM2.5 (µg/m³)</small><b id="pm25">--</b></div>
   <div class="card"><small>Children</small><b id="aqiChild">--</b></div>
   <div class="card"><small>Elderly</small><b id="aqiOld">--</b></div>
   <div class="card"><small>Asthma</small><b id="aqiAsthma">--</b></div>
@@ -174,7 +174,7 @@ footer{
 <div class="grid">
   <div class="card"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
   <div class="card"><small>Golden Hour</small><b id="golden">--</b></div>
-  <div class="card"><small>Data Confidence</small><b>Medium</b></div>
+  <div class="card"><small>Data Confidence</small><b id="confidence">--</b></div>
   <div class="card"><small>Last Updated</small><b id="updated">--</b></div>
 </div>
 
@@ -185,17 +185,18 @@ footer{
 </div>
 
 <script>
-const city=document.getElementById("city");
-const search=document.getElementById("search");
-const el={};
+const city = document.getElementById("city");
+const search = document.getElementById("search");
+const title = document.getElementById("title");
+const el = {};
 [
  "temp","humidity","wind","rainProb","rainIntensity","roadRisk","stormRisk",
  "pm25","aqiChild","aqiOld","aqiAsthma",
  "uv","sunburn","wetbulb","coldRisk",
  "mood","productivity","bestTime",
  "sun","golden","updated",
- "todayMin","todayMax","nextMin","nextMax"
-].forEach(id=>el[id]=document.getElementById(id));
+ "todayMin","todayMax","nextMin","nextMax","confidence"
+].forEach(id => el[id] = document.getElementById(id));
 
 function wetBulb(t,h){
   return (
@@ -213,75 +214,98 @@ function addHour(t,o){
 async function load(lat,lon,name){
   city.innerText=name;
 
-  const w=await fetch(
+  const w = await fetch(
 `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset,uv_index_max&current_weather=true&timezone=auto`
   ).then(r=>r.json());
 
-  const a=await fetch(
-`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`
+  const a = await fetch(
+`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
   ).then(r=>r.json());
 
-  const i=0;
-  const t=w.current_weather.temperature;
-  const h=w.hourly.relative_humidity_2m[i];
-  const wind=w.current_weather.windspeed;
-  const rp=w.hourly.precipitation_probability[i];
-  const rm=w.hourly.precipitation[i];
-  const pm=a.hourly.pm2_5[i];
+  const ci = w.hourly.time.indexOf(w.current_weather.time);
+  const i = ci >= 0 ? ci : 0;
+  const ai = a.hourly.time.indexOf(w.current_weather.time);
 
-  el.temp.innerText=`${t}°C`;
-  el.humidity.innerText=`${h}%`;
-  el.wind.innerText=`${wind} km/h`;
-  el.rainProb.innerText=`${rp}%`;
-  el.rainIntensity.innerText=rm===0?"None":rm<2?"Light":rm<10?"Moderate":"Heavy";
-  el.roadRisk.innerText=rm>=10?"Avoid":rm>=2?"Caution":"Safe";
-  el.stormRisk.innerText=rm>=10?"Likely":"Low";
+  const t = w.current_weather.temperature;
+  const h = w.hourly.relative_humidity_2m[i];
+  const wind = w.current_weather.windspeed * 3.6;
+  const rp = w.hourly.precipitation_probability[i];
+  const rm = w.hourly.precipitation[i];
+  const pm = a.hourly.pm2_5[ai >= 0 ? ai : 0];
 
-  el.pm25.innerText=Math.round(pm);
-  el.aqiChild.innerText=pm>75?"High":"Low";
-  el.aqiOld.innerText=pm>100?"High":"Moderate";
-  el.aqiAsthma.innerText=pm>60?"High":"Low";
+  el.temp.innerText = `${t}°C`;
+  el.humidity.innerText = `${h}%`;
+  el.wind.innerText = `${Math.round(wind)} km/h`;
+  el.rainProb.innerText = `${rp}%`;
 
-  const uv=w.daily.uv_index_max[0];
-  el.uv.innerText=uv;
-  el.sunburn.innerText=uv>=8?"Severe":uv>=5?"High":"Low";
-  el.wetbulb.innerText=wetBulb(t,h)+"°C";
-  el.coldRisk.innerText=t<=8?"High":"Low";
+  el.rainIntensity.innerText =
+    rm < 1 ? "Drizzle" :
+    rm < 5 ? "Light" :
+    rm < 15 ? "Moderate" : "Heavy";
 
-  el.mood.innerText=rp>=60?"Irritable":t>=35?"Drained":"Calm";
-  el.productivity.innerText=(t>=20&&t<=30&&rp<30)?"High":"Low";
-  el.bestTime.innerText=(rp<30&&uv<6)?"Morning / Evening":"Late Evening";
+  el.roadRisk.innerText = rm >= 15 ? "Avoid" : rm >= 5 ? "Caution" : "Safe";
+  el.stormRisk.innerText = rm >= 15 ? "Likely" : "Low";
 
-  const sr=w.daily.sunrise[0].slice(11,16);
-  const ss=w.daily.sunset[0].slice(11,16);
-  el.sun.innerText=`${sr} / ${ss}`;
-  el.golden.innerText=`${sr} – ${addHour(sr,1)} / ${addHour(ss,-1)} – ${ss}`;
+  el.pm25.innerText = Math.round(pm);
+  el.aqiChild.innerText = pm > 75 ? "High" : "Low";
+  el.aqiOld.innerText = pm > 100 ? "High" : "Moderate";
+  el.aqiAsthma.innerText = pm > 60 ? "High" : "Low";
 
-  const temps=w.hourly.temperature_2m.slice(0,24);
-  el.todayMin.innerText=Math.min(...temps)+"°";
-  el.todayMax.innerText=Math.max(...temps)+"°";
-  const next=w.hourly.temperature_2m.slice(1,25);
-  el.nextMin.innerText=Math.min(...next)+"°";
-  el.nextMax.innerText=Math.max(...next)+"°";
+  const uv = w.daily.uv_index_max[0];
+  el.uv.innerText = uv;
+  el.sunburn.innerText = uv >= 8 ? "Severe" : uv >= 5 ? "High" : "Low";
+  el.wetbulb.innerText = wetBulb(t,h) + "°C";
+  el.coldRisk.innerText =
+    (t <= 10 && wind > 15) ? "High" :
+    (t <= 12) ? "Moderate" : "Low";
 
-  el.updated.innerText=new Date().toLocaleTimeString();
+  el.mood.innerText = rp >= 60 ? "Irritable" : t >= 35 ? "Drained" : "Calm";
+  el.productivity.innerText =
+    (t >= 20 && t <= 30 && rp < 30) ? "High" : "Low";
+  el.bestTime.innerText =
+    (rp < 30 && uv < 6) ? "Morning / Evening" : "Late Evening";
+
+  const sr = w.daily.sunrise[0].slice(11,16);
+  const ss = w.daily.sunset[0].slice(11,16);
+  el.sun.innerText = `${sr} / ${ss}`;
+  el.golden.innerText =
+    `${sr} – ${addHour(sr,1)} / ${addHour(ss,-1)} – ${ss}`;
+
+  const temps = w.hourly.temperature_2m.slice(0,24);
+  el.todayMin.innerText = Math.min(...temps) + "°";
+  el.todayMax.innerText = Math.max(...temps) + "°";
+  const next = w.hourly.temperature_2m.slice(1,25);
+  el.nextMin.innerText = Math.min(...next) + "°";
+  el.nextMax.innerText = Math.max(...next) + "°";
+
+  el.confidence.innerText =
+    (Math.abs(t - temps[0]) < 2 && rp < 40) ? "High" : "Medium";
+
+  el.updated.innerText = new Date().toLocaleTimeString();
+
+  title.innerText =
+    rp > 70 ? "🌧️ Rituva" :
+    t > 35 ? "🔥 Rituva" :
+    t < 10 ? "❄️ Rituva" : "☁️ Rituva";
 }
 
 function useMyLocation(){
   navigator.geolocation.getCurrentPosition(
-    p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
-    ()=>load(22.57,88.36,"Kolkata")
+    p => load(p.coords.latitude,p.coords.longitude,"My Location"),
+    () => load(22.57,88.36,"Kolkata")
   );
 }
+
 async function searchCity(){
-  if(!search.value)return;
-  const g=await fetch(
+  if(!search.value) return;
+  const g = await fetch(
 `https://geocoding-api.open-meteo.com/v1/search?name=${search.value}&count=1`
   ).then(r=>r.json());
   if(g.results)
     load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
   else alert("City not found");
 }
+
 useMyLocation();
 </script>
 </body>
