@@ -1,218 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
 
 <style>
 :root{
-  --bg:#000000;
-  --card:#121212;
-  --text:#ffffff;
-  --muted:#cfcfcf;
-}
-.light{
-  --bg:#f4f4f4;
-  --card:#ffffff;
-  --text:#000000;
-  --muted:#555555;
+  --bg:#000;
+  --card:#1a1a1a;
+  --soft:#222;
+  --text:#fff;
+  --muted:#9a9a9a;
+  --radius:26px;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
   background:var(--bg);
   color:var(--text);
-  font-family:system-ui,-apple-system,BlinkMacSystemFont;
-  font-size:18px;
-  line-height:1.6;
-  -webkit-text-size-adjust:100%;
+  font-family:-apple-system,BlinkMacSystemFont,system-ui;
 }
 .app{
-  max-width:480px;
+  max-width:430px;
   margin:0 auto;
-  padding-bottom:28px;
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
+  padding:18px;
 }
-.app-header{
+
+/* HEADER */
+.header h1{
+  font-size:34px;
+  font-weight:800;
+  margin-bottom:18px;
+}
+
+/* SEARCH */
+.search-box{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px;
-  position:sticky;
-  top:0;
-  background:var(--bg);
-  z-index:10;
+  flex-direction:column;
+  gap:14px;
+  margin-bottom:28px;
 }
-.title{font-size:26px;font-weight:800;}
-.city{font-size:16px;color:var(--muted);}
-.toggle{
+.search-box input,
+.search-box button{
+  padding:18px;
   font-size:18px;
-  padding:8px 12px;
-  border-radius:20px;
   border:none;
-  background:var(--card);
+  border-radius:var(--radius);
+  background:var(--soft);
   color:var(--text);
 }
-.controls{
+
+/* HERO */
+.hero small{
+  color:var(--muted);
+  font-size:18px;
+}
+.hero-temp{
+  font-size:84px;
+  font-weight:800;
+  margin-bottom:22px;
+}
+
+/* SECTION */
+.section-title{
+  font-size:26px;
+  font-weight:700;
+  margin:30px 0 16px;
+}
+
+/* CARDS */
+.grid{
   display:grid;
-  grid-template-columns:1fr auto auto;
-  gap:10px;
-  padding:12px 14px;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
 }
-@media(max-width:420px){
-  .controls{grid-template-columns:1fr;}
+.card{
+  background:var(--card);
+  padding:22px;
+  border-radius:var(--radius);
+  text-align:center;
 }
-input,button{
-  padding:14px;
-  font-size:16px;
-  border-radius:14px;
-  border:none;
-  min-height:48px;
+.card small{
+  color:var(--muted);
+  font-size:15px;
 }
-section{padding:14px;}
-h2{margin:12px 0 14px;font-size:20px;}
-.cards{display:flex;flex-direction:column;gap:14px;}
-.card{background:var(--card);padding:16px;border-radius:16px;}
 .card b{
   display:block;
-  margin-top:8px;
   font-size:32px;
-  font-weight:800;
+  margin-top:6px;
 }
-.main-temp b{font-size:48px;line-height:1.1;}
-small{font-size:14px;color:var(--muted);}
-footer{text-align:center;padding:16px;font-size:14px;color:var(--muted);}
-@media(min-width:768px){
-  body{display:flex;justify-content:center;}
-  .cards{flex-direction:row;flex-wrap:wrap;}
-  .card{flex:1 1 calc(50% - 16px);}
+.full{grid-column:1 / -1}
+
+footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  margin:40px 0 10px;
 }
 </style>
 </head>
+
 <body>
 <div class="app">
 
-<div class="app-header">
-  <div>
-    <div class="title">Rituva</div>
-    <div class="city" id="city">Locating…</div>
-  </div>
-  <button class="toggle" onclick="toggleTheme()">🌙</button>
+<div class="header">
+  <h1>🌦️ Rituva</h1>
 </div>
 
-<div class="controls">
-  <input id="search" placeholder="Search city" />
+<div class="search-box">
+  <input id="search" placeholder="Search city"
+         onkeydown="if(event.key==='Enter')searchCity()">
   <button onclick="searchCity()">Search</button>
-  <button onclick="useMyLocation()">📍</button>
+  <button onclick="useMyLocation()">📍 Use My Location</button>
 </div>
 
-<section>
-<h2>🌡 Current Conditions</h2>
-<div class="cards">
-  <div class="card main-temp">Temperature<b id="temp">--</b></div>
-  <div class="card">24h Min / Max<b id="temp24">--</b></div>
-  <div class="card">Humidity<b id="humidity">--</b></div>
-  <div class="card">Wind<b id="wind">--</b></div>
+<div class="hero">
+  <small id="city">My Location</small>
+  <div class="hero-temp" id="temp">--°C</div>
 </div>
-</section>
 
-<section>
-<h2>🌧 Rain</h2>
-<div class="cards">
-  <div class="card">Rain Intensity<b id="rainIntensity">--</b></div>
-  <div class="card">Rain Probability<b id="rainProb">--</b></div>
-  <div class="card">24h Rain<b id="rain24">--</b></div>
-  <div class="card">Road Risk<b id="roadRisk">--</b></div>
+<!-- TEMPERATURE -->
+<div class="section-title">🌡 Temperature</div>
+<div class="grid">
+  <div class="card"><small>Today Min</small><b id="todayMin">--</b></div>
+  <div class="card"><small>Today Max</small><b id="todayMax">--</b></div>
+  <div class="card"><small>Next 24H Min</small><b id="nextMin">--</b></div>
+  <div class="card"><small>Next 24H Max</small><b id="nextMax">--</b></div>
 </div>
-</section>
 
-<section>
-<h2>🌬 Air Quality</h2>
-<div class="cards">
-  <div class="card">PM2.5<b id="pm25">--</b></div>
-  <div class="card">Children<b id="aqiChild">--</b></div>
-  <div class="card">Elderly<b id="aqiOld">--</b></div>
-  <div class="card">Asthma<b id="aqiAsthma">--</b></div>
+<!-- CURRENT CONDITIONS -->
+<div class="section-title">🌧 Conditions</div>
+<div class="grid">
+  <div class="card"><small>Humidity</small><b id="humidity">--</b></div>
+  <div class="card"><small>Wind</small><b id="wind">--</b></div>
+  <div class="card"><small>Rain Probability</small><b id="rainProb">--</b></div>
+  <div class="card"><small>Rain Intensity</small><b id="rainIntensity">--</b></div>
+  <div class="card"><small>Road Risk</small><b id="roadRisk">--</b></div>
+  <div class="card"><small>Heavy Rain Risk</small><b id="stormRisk">--</b></div>
 </div>
-</section>
 
-<section>
-<h2>📆 7-Day Temperature</h2>
-<div class="cards">
-  <div class="card">Min / Max<b id="temp7">--</b></div>
+<!-- AIR QUALITY -->
+<div class="section-title">🌬 Air Quality</div>
+<div class="grid">
+  <div class="card full">
+    <small>PM2.5 (µg/m³)</small>
+    <b id="pm25">--</b>
+  </div>
+  <div class="card"><small>Children</small><b id="aqiChild">--</b></div>
+  <div class="card"><small>Elderly</small><b id="aqiOld">--</b></div>
+  <div class="card"><small>Asthma</small><b id="aqiAsthma">--</b></div>
 </div>
-</section>
 
-<section>
-<h2>🌅 Sun</h2>
-<div class="cards">
-  <div class="card">Sunrise / Sunset<b id="sun">--</b></div>
-  <div class="card">Golden Hour<b id="golden">--</b></div>
+<!-- HEAT & COLD -->
+<div class="section-title">🌞 Heat & Cold Stress</div>
+<div class="grid">
+  <div class="card"><small>UV Index</small><b id="uv">--</b></div>
+  <div class="card"><small>Sunburn Risk</small><b id="sunburn">--</b></div>
+  <div class="card"><small>Wet-Bulb Temp</small><b id="wetbulb">--</b></div>
+  <div class="card"><small>Cold Exposure</small><b id="coldRisk">--</b></div>
 </div>
-</section>
 
-<footer>© Manik Roy 2025. All Rights Reserved.</footer>
+<!-- HUMAN IMPACT -->
+<div class="section-title">🧠 Human Impact</div>
+<div class="grid">
+  <div class="card"><small>Mood</small><b id="mood">--</b></div>
+  <div class="card"><small>Productivity</small><b id="productivity">--</b></div>
+  <div class="card full"><small>Best Outdoor Time</small><b id="bestTime">--</b></div>
+</div>
+
+<!-- SUN -->
+<div class="section-title">🌅 Sun & Trust</div>
+<div class="grid">
+  <div class="card"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
+  <div class="card"><small>Golden Hour</small><b id="golden">--</b></div>
+  <div class="card"><small>Data Confidence</small><b>Medium</b></div>
+  <div class="card"><small>Last Updated</small><b id="updated">--</b></div>
+</div>
+
+<footer>
+© Manik Roy 2025 · Indicative insights only
+</footer>
+
 </div>
 
 <script>
-const el=id=>document.getElementById(id);
-const city=el('city'),temp=el('temp'),temp24=el('temp24'),humidity=el('humidity'),wind=el('wind');
-const rainIntensity=el('rainIntensity'),rainProb=el('rainProb'),rain24=el('rain24'),roadRisk=el('roadRisk');
-const pm25=el('pm25'),aqiChild=el('aqiChild'),aqiOld=el('aqiOld'),aqiAsthma=el('aqiAsthma');
-const temp7=el('temp7'),sun=el('sun'),golden=el('golden');
+const city=document.getElementById("city");
+const search=document.getElementById("search");
+const el={};
+[
+ "temp","humidity","wind","rainProb","rainIntensity","roadRisk","stormRisk",
+ "pm25","aqiChild","aqiOld","aqiAsthma",
+ "uv","sunburn","wetbulb","coldRisk",
+ "mood","productivity","bestTime",
+ "sun","golden","updated",
+ "todayMin","todayMax","nextMin","nextMax"
+].forEach(id=>el[id]=document.getElementById(id));
 
-function toggleTheme(){
-  document.body.classList.toggle('light');
+function wetBulb(t,h){
+  return (
+    t*Math.atan(0.151977*Math.sqrt(h+8.313659)) +
+    Math.atan(t+h) - Math.atan(h-1.676331) +
+    0.00391838*Math.pow(h,1.5)*Math.atan(0.023101*h) - 4.686035
+  ).toFixed(1);
+}
+function addHour(t,o){
+  let[h,m]=t.split(":").map(Number);
+  h=(h+o+24)%24;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
 }
 
 async function load(lat,lon,name){
-  try{
-    const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset,temperature_2m_min,temperature_2m_max&current_weather=true&timezone=auto`).then(r=>r.json());
-    const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`).then(r=>r.json());
+  city.innerText=name;
 
-    const idx=0;
-    temp.textContent=w.current_weather.temperature+'°C';
-    humidity.textContent=w.hourly.relative_humidity_2m[idx]+'%';
-    wind.textContent=w.current_weather.windspeed+' km/h';
+  const w=await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset,uv_index_max&current_weather=true&timezone=auto`
+  ).then(r=>r.json());
 
-    const t24=w.hourly.temperature_2m.slice(0,24);
-    temp24.textContent=Math.min(...t24).toFixed(1)+'° / '+Math.max(...t24).toFixed(1)+'°';
+  const a=await fetch(
+`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`
+  ).then(r=>r.json());
 
-    const r24=w.hourly.precipitation.slice(0,24).reduce((a,b)=>a+b,0);
-    rain24.textContent=r24.toFixed(1)+' mm';
-    rainProb.textContent=w.hourly.precipitation_probability[idx]+'%';
-    rainIntensity.textContent=r24===0?'None':r24<10?'Light':'Heavy';
-    roadRisk.textContent=r24>=20?'Avoid':r24>=5?'Caution':'Safe';
+  const i=0;
+  const t=w.current_weather.temperature;
+  const h=w.hourly.relative_humidity_2m[i];
+  const wind=w.current_weather.windspeed;
+  const rp=w.hourly.precipitation_probability[i];
+  const rm=w.hourly.precipitation[i];
+  const pm=a.hourly.pm2_5[i];
 
-    const pm=a.hourly.pm2_5 ? a.hourly.pm2_5[0] : null;
-    pm25.textContent=pm?Math.round(pm):'N/A';
-    aqiChild.textContent=pm>35?'High':'Low';
-    aqiOld.textContent=pm>55?'High':'Moderate';
-    aqiAsthma.textContent=pm>25?'High':'Low';
+  el.temp.innerText=`${t}°C`;
+  el.humidity.innerText=`${h}%`;
+  el.wind.innerText=`${wind} km/h`;
+  el.rainProb.innerText=`${rp}%`;
+  el.rainIntensity.innerText=rm===0?"None":rm<2?"Light":rm<10?"Moderate":"Heavy";
+  el.roadRisk.innerText=rm>=10?"Avoid":rm>=2?"Caution":"Safe";
+  el.stormRisk.innerText=rm>=10?"Likely":"Low";
 
-    temp7.textContent=Math.min(...w.daily.temperature_2m_min).toFixed(1)+'° / '+Math.max(...w.daily.temperature_2m_max).toFixed(1)+'°';
+  el.pm25.innerText=Math.round(pm);
+  el.aqiChild.innerText=pm>75?"High":"Low";
+  el.aqiOld.innerText=pm>100?"High":"Moderate";
+  el.aqiAsthma.innerText=pm>60?"High":"Low";
 
-    const sr=w.daily.sunrise[0].slice(11,16);
-    const ss=w.daily.sunset[0].slice(11,16);
-    sun.textContent=sr+' / '+ss;
-    golden.textContent=sr+'–'+ss;
+  const uv=w.daily.uv_index_max[0];
+  el.uv.innerText=uv;
+  el.sunburn.innerText=uv>=8?"Severe":uv>=5?"High":"Low";
+  el.wetbulb.innerText=wetBulb(t,h)+"°C";
+  el.coldRisk.innerText=t<=8?"High":"Low";
 
-    city.textContent=name;
-  }catch(e){
-    city.textContent='Data unavailable';
-  }
+  el.mood.innerText=rp>=60?"Irritable":t>=35?"Drained":"Calm";
+  el.productivity.innerText=(t>=20&&t<=30&&rp<30)?"High":"Low";
+  el.bestTime.innerText=(rp<30&&uv<6)?"Morning / Evening":"Late Evening";
+
+  const sr=w.daily.sunrise[0].slice(11,16);
+  const ss=w.daily.sunset[0].slice(11,16);
+  el.sun.innerText=`${sr} / ${ss}`;
+  el.golden.innerText=`${sr} – ${addHour(sr,1)} / ${addHour(ss,-1)} – ${ss}`;
+
+  const temps=w.hourly.temperature_2m.slice(0,24);
+  el.todayMin.innerText=Math.min(...temps)+"°";
+  el.todayMax.innerText=Math.max(...temps)+"°";
+  const next=w.hourly.temperature_2m.slice(1,25);
+  el.nextMin.innerText=Math.min(...next)+"°";
+  el.nextMax.innerText=Math.max(...next)+"°";
+
+  el.updated.innerText=new Date().toLocaleTimeString();
 }
 
 function useMyLocation(){
-  navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,'My Location'),()=>load(22.57,88.36,'Kolkata, India'));
+  navigator.geolocation.getCurrentPosition(
+    p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
+    ()=>load(22.57,88.36,"Kolkata")
+  );
 }
 async function searchCity(){
-  const q=document.getElementById('search').value;
-  if(!q)return;
-  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
-  if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name+', '+g.results[0].country);
+  if(!search.value)return;
+  const g=await fetch(
+`https://geocoding-api.open-meteo.com/v1/search?name=${search.value}&count=1`
+  ).then(r=>r.json());
+  if(g.results)
+    load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
+  else alert("City not found");
 }
 useMyLocation();
 </script>
