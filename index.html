@@ -5,21 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
 
-<!-- Embedded Manifest -->
-<link rel="manifest" href="data:application/manifest+json,{
-  \"name\":\"Rituva – India Weather Intelligence\",
-  \"short_name\":\"Rituva\",
-  \"start_url\":\"./\",
-  \"display\":\"standalone\",
-  \"background_color\":\"#000000\",
-  \"theme_color\":\"#000000\",
-  \"orientation\":\"portrait\",
-  \"icons\":[
-    {\"src\":\"icon-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"},
-    {\"src\":\"icon-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\"}
-  ]
-}">
-
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 
 <style>
@@ -28,15 +14,11 @@
   --text:#fff;--muted:#9a9a9a;--radius:26px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);
-font-family:-apple-system,BlinkMacSystemFont,system-ui}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,system-ui}
 .app{max-width:430px;margin:auto;padding:18px}
 .header h1{font-size:34px;font-weight:800;margin-bottom:18px}
 .search-box{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
-.search-box input,.search-box button{
-  padding:18px;font-size:18px;border:none;
-  border-radius:var(--radius);background:var(--soft);color:var(--text)
-}
+.search-box input,.search-box button{padding:18px;font-size:18px;border:none;border-radius:var(--radius);background:var(--soft);color:var(--text)}
 .hero{text-align:center}
 .hero small{color:var(--muted);font-size:18px}
 .hero-temp{font-size:84px;font-weight:800;margin:12px 0 22px}
@@ -51,15 +33,13 @@ font-family:-apple-system,BlinkMacSystemFont,system-ui}
 footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
 </style>
 </head>
-
 <body>
 <div class="app">
 
 <div class="header"><h1>🌦️ Rituva</h1></div>
 
 <div class="search-box">
-  <input id="search" placeholder="Search city"
-   onkeydown="if(event.key==='Enter')searchCity()">
+  <input id="search" placeholder="Search city" onkeydown="if(event.key==='Enter')searchCity()">
   <button onclick="searchCity()">Search</button>
   <button onclick="useMyLocation()">📍 Use My Location</button>
 </div>
@@ -136,193 +116,73 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
 </div>
 
 <script>
-// ==== SERVICE WORKER INLINE ====
-if('serviceWorker' in navigator){
-  const swCode=`
-  const CACHE='rituva-v1';
-  const ASSETS=['./','./index.html','./icon-192.png','./icon-512.png'];
-  self.addEventListener('install',e=>{
-    e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
-    self.skipWaiting();
-  });
-  self.addEventListener('activate',e=>{
-    e.waitUntil(
-      caches.keys().then(keys=>Promise.all(keys.map(k=>k!==CACHE&&caches.delete(k))))
-    );
-    self.clients.claim();
-  });
-  self.addEventListener('fetch',e=>{
-    e.respondWith(
-      caches.match(e.request).then(r=>r||fetch(e.request).then(n=>{
-        if(e.request.url.startsWith('http')){
-          const c=n.clone();
-          caches.open(CACHE).then(cache=>cache.put(e.request,c));
-        }
-        return n;
-      }).catch(()=>r))
-    );
-  });`;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob));
-}
+document.addEventListener("DOMContentLoaded", ()=>{
+  // ==== SERVICE WORKER ====
+  if('serviceWorker' in navigator){
+    const swCode=`
+      const CACHE='rituva-v1';
+      const ASSETS=['./','./index.html','./icon-192.png','./icon-512.png'];
+      self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
+      self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.map(k=>k!==CACHE&&caches.delete(k)))));self.clients.claim();});
+      self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(n=>{if(e.request.url.startsWith('http')){const c=n.clone();caches.open(CACHE).then(cache=>cache.put(e.request,c));}return n;}).catch(()=>r)));});
+    `;
+    const blob=new Blob([swCode],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+  }
 
-// ==== MAIN APP ====
-const el={};
-[
-"temp","humidity","wind","rainProb","rainIntensity","totalRain",
-"floodProb","roadRisk","cyclone","monsoon","msi","sun","updated",
-"pm25","aqiChild","aqiOld","aqiAsthma",
-"temp24Min","temp24Max",
-"heatwave","nightDiscomfort","powerDemand"
-].forEach(id=>el[id]=document.getElementById(id));
+  // ==== APP LOGIC ====
+  const el={};
+  ["temp","humidity","wind","rainProb","rainIntensity","totalRain","floodProb","roadRisk","cyclone","monsoon","msi","sun","updated","pm25","aqiChild","aqiOld","aqiAsthma","temp24Min","temp24Max","heatwave","nightDiscomfort","powerDemand"].forEach(id=>el[id]=document.getElementById(id));
 
-function safeIndex(times){
-  const now=new Date();
-  const i=times.findIndex(t=>Math.abs(new Date(t)-now)<36e5);
-  return i>=0?i:0;
-}
+  function safeIndex(times){const now=new Date();const i=times.findIndex(t=>Math.abs(new Date(t)-now)<36e5);return i>=0?i:0;}
+  function drawRainChart(data){const c=document.getElementById("rainChart");c.innerHTML="";const m=Math.max(...data,1);data.forEach(v=>{const b=document.createElement("div");b.className="bar";b.style.height=(v/m*100)+"%";b.style.background=v>10?"#0277bd":v>2?"#4fc3f7":"#263238";c.appendChild(b);});}
 
-function drawRainChart(data){
-  const c=document.getElementById("rainChart");
-  c.innerHTML="";
-  const m=Math.max(...data,1);
-  data.forEach(v=>{
-    const b=document.createElement("div");
-    b.className="bar";
-    b.style.height=(v/m*100)+"%";
-    b.style.background=v>10?"#0277bd":v>2?"#4fc3f7":"#263238";
-    c.appendChild(b);
-  });
-}
+  async function load(lat,lon,name){
+    document.getElementById("city").innerText=name;
+    const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset&current_weather=true&timezone=auto`).then(r=>r.json());
+    const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json()).catch(()=>null);
+    const i=safeIndex(w.hourly.time);
+    const t=w.current_weather?.temperature ?? w.hourly.temperature_2m[i];
+    const h=w.hourly.relative_humidity_2m[i];
+    const wind=(w.current_weather?.windspeed ?? w.hourly.wind_speed_10m[i])*3.6;
+    const rp=w.hourly.precipitation_probability[i];
+    const hourlyRain=w.hourly.precipitation.slice(i,i+24);
+    const totalRain=hourlyRain.reduce((a,b)=>a+b,0);
 
-async function load(lat,lon,name){
-document.getElementById("city").innerText=name;
+    el.temp.innerText=t+"°C"; el.humidity.innerText=h+"%"; el.wind.innerText=Math.round(wind)+" km/h";
+    el.rainProb.innerText=rp+"%"; el.totalRain.innerText=totalRain.toFixed(1)+" mm"; el.rainIntensity.innerText=totalRain<5?"Light":totalRain<25?"Moderate":"Heavy";
+    let flood=5;if(totalRain>=10)flood=20;if(totalRain>=25)flood=50;if(totalRain>=50)flood=75;if(totalRain>=100)flood=95;el.floodProb.innerText=flood+"%";
+    el.roadRisk.innerText=totalRain>=40?"Flood Risk":totalRain>=20?"Avoid":totalRain>=5?"Caution":"Safe";
+    el.cyclone.innerText=(wind>=45&&rp>=80&&totalRain>=30)?"Watch 🌀":"None";
+    const month=new Date().getMonth();el.monsoon.innerText=((month>=5&&month<=8)||totalRain>=15||rp>=60)?"Active 🌧️":"Inactive";
+    let msi=0;msi+=Math.min(totalRain/10,5);msi+=rp>=70?2:rp>=40?1:0;msi+=wind>=30?2:wind>=20?1:0;msi=Math.min(Math.round(msi),10);const label=msi>=9?"Extreme":msi>=7?"Heavy":msi>=5?"Active":msi>=3?"Normal":"Weak";el.msi.innerText=`${msi}/10 · ${label}`;
+    const pm=a?.hourly?.pm2_5?.[i] ?? a?.hourly?.pm2_5?.[0] ?? 0;el.pm25.innerText=Math.round(pm);el.aqiChild.innerText=pm>75?"High":pm>35?"Moderate":"Low";el.aqiOld.innerText=pm>100?"High":pm>50?"Moderate":"Low";el.aqiAsthma.innerText=pm>60?"High":"Low";
+    drawRainChart(hourlyRain);
 
-const w=await fetch(
-\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset&current_weather=true&timezone=auto\`
-).then(r=>r.json());
+    const wr=document.getElementById("weeklyRain"); wr.innerHTML="";
+    for(let d=0;d<7;d++){const r=w.hourly.precipitation.slice(d*24,d*24+24).reduce((a,b)=>a+b,0); wr.innerHTML+=`<div class="card"><small>Day ${d+1}</small><b>${r.toFixed(1)} mm</b></div>`;}
+    const wt=document.getElementById("weeklyTemp"); wt.innerHTML="";
+    for(let d=0;d<7;d++){const temps=w.hourly.temperature_2m.slice(d*24,d*24+24); wt.innerHTML+=`<div class="card"><small>Day ${d+1}</small><b>${Math.min(...temps).toFixed(0)}° / ${Math.max(...temps).toFixed(0)}°</b></div>`;}
+    const temps24=w.hourly.temperature_2m.slice(i,i+24); el.temp24Min.innerText=Math.min(...temps24).toFixed(0)+"°C"; el.temp24Max.innerText=Math.max(...temps24).toFixed(0)+"°C";
 
-const a=await fetch(
-\`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=\${lat}&longitude=\${lon}&hourly=pm2_5&timezone=auto\`
-).then(r=>r.json()).catch(()=>null);
+    // Heatwave Index
+    const dayMax=Math.max(...temps24); const nightMin=Math.min(...temps24.slice(18,24));
+    let heatIndex=0; if(dayMax>=40) heatIndex=3;if(dayMax>=42) heatIndex=4;if(dayMax>=45) heatIndex=5;if(h>=60 && dayMax>=38) heatIndex+=1; heatIndex=Math.min(heatIndex,5);
+    const heatLabel=heatIndex===5?"Extreme":heatIndex===4?"Severe":heatIndex===3?"Heatwave":heatIndex===2?"Stress":heatIndex===1?"Warm":"None"; el.heatwave.innerText=`${heatIndex} · ${heatLabel}`;
 
-const i=safeIndex(w.hourly.time);
+    let ndi=0;if(nightMin>=28) ndi=2;if(nightMin>=30) ndi=3;if(nightMin>=32) ndi=4;if(h>=70 && nightMin>=27) ndi+=1;ndi=Math.min(ndi,5);
+    const ndiLabel=ndi>=4?"Very Poor":ndi>=3?"Poor":ndi>=2?"Moderate":ndi>=1?"Slight":"Comfortable"; el.nightDiscomfort.innerText=`${ndi} · ${ndiLabel}`;
 
-const t=w.current_weather?.temperature ?? w.hourly.temperature_2m[i];
-const h=w.hourly.relative_humidity_2m[i];
-const wind=(w.current_weather?.windspeed ?? w.hourly.wind_speed_10m[i])*3.6;
-const rp=w.hourly.precipitation_probability[i];
-const hourlyRain=w.hourly.precipitation.slice(i,i+24);
-const totalRain=hourlyRain.reduce((a,b)=>a+b,0);
+    let demand="Normal";if(dayMax>=35) demand="High";if(dayMax>=38) demand="Very High";if(dayMax>=42) demand="Extreme";if(heatIndex>=4) demand+=" ⚠️"; el.powerDemand.innerText=demand;
 
-el.temp.innerText=t+"°C";
-el.humidity.innerText=h+"%";
-el.wind.innerText=Math.round(wind)+" km/h";
-el.rainProb.innerText=rp+"%";
-el.totalRain.innerText=totalRain.toFixed(1)+" mm";
-el.rainIntensity.innerText=totalRain<5?"Light":totalRain<25?"Moderate":"Heavy";
+    el.sun.innerText=w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16);
+    el.updated.innerText=new Date().toLocaleTimeString();
+  }
 
-let flood=5;
-if(totalRain>=10)flood=20;
-if(totalRain>=25)flood=50;
-if(totalRain>=50)flood=75;
-if(totalRain>=100)flood=95;
-el.floodProb.innerText=flood+"%";
-
-el.roadRisk.innerText=totalRain>=40?"Flood Risk":totalRain>=20?"Avoid":totalRain>=5?"Caution":"Safe";
-el.cyclone.innerText=(wind>=45&&rp>=80&&totalRain>=30)?"Watch 🌀":"None";
-
-const month=new Date().getMonth();
-el.monsoon.innerText=((month>=5&&month<=8)||totalRain>=15||rp>=60)?"Active 🌧️":"Inactive";
-
-let msi=0;
-msi+=Math.min(totalRain/10,5);
-msi+=rp>=70?2:rp>=40?1:0;
-msi+=wind>=30?2:wind>=20?1:0;
-msi=Math.min(Math.round(msi),10);
-const label=msi>=9?"Extreme":msi>=7?"Heavy":msi>=5?"Active":msi>=3?"Normal":"Weak";
-el.msi.innerText=\`\${msi}/10 · \${label}\`;
-
-// AQI
-const pm=a?.hourly?.pm2_5?.[i] ?? a?.hourly?.pm2_5?.[0] ?? 0;
-el.pm25.innerText=Math.round(pm);
-el.aqiChild.innerText=pm>75?"High":pm>35?"Moderate":"Low";
-el.aqiOld.innerText=pm>100?"High":pm>50?"Moderate":"Low";
-el.aqiAsthma.innerText=pm>60?"High":"Low";
-
-// Hourly Rain Chart
-drawRainChart(hourlyRain);
-
-// 7-Day Rain
-const wr=document.getElementById("weeklyRain");
-wr.innerHTML="";
-for(let d=0;d<7;d++){
-  const r=w.hourly.precipitation.slice(d*24,d*24+24).reduce((a,b)=>a+b,0);
-  wr.innerHTML+=\`<div class="card"><small>Day \${d+1}</small><b>\${r.toFixed(1)} mm</b></div>\`;
-}
-
-// 7-Day Temperature
-const wt=document.getElementById("weeklyTemp");
-wt.innerHTML="";
-for(let d=0;d<7;d++){
-  const temps=w.hourly.temperature_2m.slice(d*24,d*24+24);
-  wt.innerHTML+=\`<div class="card"><small>Day \${d+1}</small><b>\${Math.min(...temps).toFixed(0)}° / \${Math.max(...temps).toFixed(0)}°</b></div>\`;
-}
-
-// 24h Temperature min/max
-const temps24=w.hourly.temperature_2m.slice(i,i+24);
-el.temp24Min.innerText=Math.min(...temps24).toFixed(0)+"°C";
-el.temp24Max.innerText=Math.max(...temps24).toFixed(0)+"°C";
-
-// Heatwave Index
-const dayMax=Math.max(...temps24);
-const nightMin=Math.min(...temps24.slice(18,24));
-let heatIndex=0;
-if(dayMax>=40) heatIndex=3;
-if(dayMax>=42) heatIndex=4;
-if(dayMax>=45) heatIndex=5;
-if(h>=60 && dayMax>=38) heatIndex+=1;
-heatIndex=Math.min(heatIndex,5);
-const heatLabel=heatIndex===5?"Extreme":heatIndex===4?"Severe":heatIndex===3?"Heatwave":heatIndex===2?"Stress":heatIndex===1?"Warm":"None";
-el.heatwave.innerText=\`\${heatIndex} · \${heatLabel}\`;
-
-// Night Discomfort
-let ndi=0;
-if(nightMin>=28) ndi=2;
-if(nightMin>=30) ndi=3;
-if(nightMin>=32) ndi=4;
-if(h>=70 && nightMin>=27) ndi+=1;
-ndi=Math.min(ndi,5);
-const ndiLabel=ndi>=4?"Very Poor":ndi>=3?"Poor":ndi>=2?"Moderate":ndi>=1?"Slight":"Comfortable";
-el.nightDiscomfort.innerText=\`\${ndi} · \${ndiLabel}\`;
-
-// Power Demand Forecast
-let demand="Normal";
-if(dayMax>=35) demand="High";
-if(dayMax>=38) demand="Very High";
-if(dayMax>=42) demand="Extreme";
-if(heatIndex>=4) demand+=" ⚠️";
-el.powerDemand.innerText=demand;
-
-el.sun.innerText=w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16);
-el.updated.innerText=new Date().toLocaleTimeString();
-}
-
-function useMyLocation(){
-navigator.geolocation.getCurrentPosition(
-p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
-()=>load(22.57,88.36,"Kolkata"));
-}
-
-function searchCity(){
-const q=document.getElementById("search").value;
-if(!q)return;
-fetch(\`https://geocoding-api.open-meteo.com/v1/search?name=\${q}&count=1\`)
-.then(r=>r.json())
-.then(g=>g.results&&load(g.results[0].latitude,g.results[0].longitude,g.results[0].name));
-}
-
-useMyLocation();
+  window.useMyLocation=function(){navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"My Location"),()=>load(22.57,88.36,"Kolkata"));}
+  window.searchCity=function(){const q=document.getElementById("search").value;if(!q)return;fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json()).then(g=>g.results&&load(g.results[0].latitude,g.results[0].longitude,g.results[0].name));}
+  useMyLocation();
+});
 </script>
 </body>
 </html>
