@@ -3,300 +3,288 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva – Climate & Human Impact Intelligence</title>
+<title>Rituva</title>
 
 <style>
 :root{
-  --bg:#000;
-  --card:#141414;
-  --text:#fff;
-  --muted:#aaa;
+  --bg:#000000;
+  --card:#121212;
+  --text:#ffffff;
+  --muted:#cfcfcf;
 }
+.light{
+  --bg:#f4f4f4;
+  --card:#ffffff;
+  --text:#000000;
+  --muted:#555555;
+}
+*{box-sizing:border-box}
 body{
   margin:0;
   background:var(--bg);
   color:var(--text);
   font-family:system-ui,-apple-system,BlinkMacSystemFont;
-  font-size:18px;
+  font-size:20px;
+  line-height:1.6;
 }
-.container{
-  max-width:520px;
-  margin:auto;
-  padding:18px 18px 140px;
-}
-h1{font-size:34px;margin:10px 0 18px;font-weight:700;}
-h2{margin:32px 0 14px;font-size:24px;font-weight:600;}
-#locationName{font-size:20px;margin-bottom:6px;}
-.big{font-size:64px;font-weight:700;text-align:center;margin-bottom:6px;}
-input,button{
-  width:100%;
-  padding:16px;
-  border:none;
-  border-radius:18px;
-  font-size:18px;
-  margin-bottom:12px;
-}
-input{background:#111;color:#fff;}
-button{background:#1f1f1f;color:#fff;}
-.cards{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-.card{
-  background:var(--card);
-  padding:18px;
-  border-radius:20px;
-  text-align:center;
-  font-size:16px;
-}
+.app{max-width:480px;margin:0 auto;padding-bottom:28px;}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:16px 14px;}
+.title{font-size:26px;font-weight:800;}
+.city{font-size:18px;color:var(--muted);}
+.toggle{font-size:18px;padding:8px 12px;border-radius:20px;border:none;background:var(--card);color:var(--text);cursor:pointer;}
+.controls{display:flex;gap:10px;padding:10px 14px;}
+input,button{padding:14px;font-size:18px;border-radius:12px;border:none;}
+input{flex:1}
+section{padding:14px;}
+h2{margin:10px 0 14px;font-size:22px;}
+.cards{display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--card);padding:16px;border-radius:16px;}
 .card b{
-  font-size:26px;
-  font-weight:700;
-}
-small{
   display:block;
-  margin-top:6px;
-  font-size:14px;
-  color:var(--muted);
+  margin-top:8px;
+  font-size:32px;
+  font-weight:800;
 }
-.footer{
-  margin-top:60px;
-  text-align:center;
-  font-size:14px;
-  color:#666;
+.main-temp b{
+  font-size:48px; /* extra-large main temperature */
+  line-height:1.1;
+}
+small{font-size:15px;color:var(--muted);}
+footer{text-align:center;padding:16px;font-size:15px;color:var(--muted);}
+@media(min-width:768px){
+  body{display:flex;justify-content:center;}
+  .cards{flex-direction:row;flex-wrap:wrap;gap:16px;}
+  .card{flex:1 1 calc(50% - 16px);}
 }
 </style>
 </head>
-
 <body>
-<div class="container">
+<div class="app">
 
-<h1>🌦 Rituva</h1>
-
-<input id="cityInput" placeholder="Search city">
-<button onclick="searchCity()">Search</button>
-<button onclick="useMyLocation()">📍 Use My Location</button>
-
-<h2 id="locationName">Detecting location…</h2>
-<div class="big" id="currentTemp">--°C</div>
-
-<h2>🌡 Temperature</h2>
-<div class="cards">
-  <div class="card">Today Min<br><b id="todayMin">--°</b></div>
-  <div class="card">Today Max<br><b id="todayMax">--°</b></div>
-  <div class="card">Next 24H Min<br><b id="temp24Min">--°</b></div>
-  <div class="card">Next 24H Max<br><b id="temp24Max">--°</b></div>
+<div class="app-header">
+  <div>
+    <div class="title">Rituva</div>
+    <div class="city" id="city">Locating…</div>
+  </div>
+  <button class="toggle" onclick="toggleTheme()">🌙</button>
 </div>
 
-<h2>📅 7-Day Temperature</h2>
-<div id="weekTemp" class="cards"></div>
-
-<h2>🌫 AQI</h2>
-<div class="cards">
-  <div class="card">Current AQI<br><b id="aqiNow">--</b><small id="aqiCat"></small></div>
-  <div class="card">Mask Advice<br><small id="maskAdvice">--</small></div>
-  <div class="card">AQI 24H Min<br><b id="aqi24Min">--</b></div>
-  <div class="card">AQI 24H Max<br><b id="aqi24Max">--</b></div>
+<div class="controls">
+  <input id="search" placeholder="Search city" onkeydown="if(event.key==='Enter')searchCity()">
+  <button onclick="searchCity()">Search</button>
+  <button onclick="useMyLocation()">📍</button>
 </div>
 
-<h2>🌧 Rain</h2>
+<section>
+<h2>🌡 Current Conditions</h2>
 <div class="cards">
-  <div class="card">Rain Now<br><b id="rainNow">-- mm</b></div>
-  <div class="card">Rain Probability<br><b id="rainProb">--%</b></div>
-  <div class="card">24H Min Rain<br><b id="rain24Min">-- mm</b></div>
-  <div class="card">24H Max Rain<br><b id="rain24Max">-- mm</b></div>
+  <div class="card main-temp">Temperature<b id="temp">--</b></div>
+  <div class="card">24h Min / Max<b id="temp24">--</b></div>
+  <div class="card">Feels Comfort<b id="feels">--</b></div>
+  <div class="card">Humidity<b id="humidity">--</b></div>
+  <div class="card">Wind<b id="wind">--</b></div>
 </div>
+</section>
 
+<section>
+<h2>🌧 Rain & Forecast</h2>
 <div class="cards">
-  <div class="card">Next 3H Alert<br><b id="rainAlert">--</b></div>
-  <div class="card">Thunderstorm<br><b id="stormAlert">--</b></div>
+  <div class="card">Rain Intensity<b id="rainIntensity">--</b></div>
+  <div class="card">Rain Probability<b id="rainProb">--</b></div>
+  <div class="card">24h Rain Total<b id="rain24">--</b></div>
+  <div class="card">Heavy Rain Risk<b id="stormETA">--</b></div>
+  <div class="card">Road / Commute<b id="roadRisk">--</b></div>
 </div>
+</section>
 
-<h2>🌾 Monsoon Intelligence</h2>
+<section>
+<h2>🌬 Air Quality</h2>
 <div class="cards">
-  <div class="card">Monsoon Status<br><b id="monsoonArrival">--</b></div>
-  <div class="card">Monsoon Health<br><b id="monsoonHealth">--</b><small id="monsoonHealthText"></small></div>
-  <div class="card">Consistency<br><b id="monsoonConsistency">--</b></div>
-  <div class="card">Dry Spell Risk<br><b id="drySpellRisk">--</b></div>
-  <div class="card">Excess Rain<br><b id="excessRain">--</b></div>
-  <div class="card">Drainage Stress<br><b id="drainageStress">--</b></div>
-  <div class="card">Agri Suitability<br><b id="agriSuit">--</b></div>
-  <div class="card">Cooling Effect<br><b id="coolingEffect">--°C</b></div>
-  <div class="card">Rain Reliability<br><b id="rainReliability">--</b></div>
-  <div class="card">Monsoon Mood<br><b id="monsoonMood">--</b></div>
-  <div class="card">City Flood Probability<br><b id="floodProb">--%</b></div>
-  <div class="card">Rain Burst Alert<br><b id="rainBurst">--</b></div>
-  <div class="card">Flood Risk (6–12H)<br><b id="floodTimeline">--%</b></div>
+  <div class="card">PM2.5 (µg/m³)<b id="pm25">--</b><small>Converted to health bands</small></div>
+  <div class="card">Children Impact<b id="aqiChild">--</b></div>
+  <div class="card">Elderly Impact<b id="aqiOld">--</b></div>
+  <div class="card">Asthma Impact<b id="aqiAsthma">--</b></div>
 </div>
+</section>
 
-<h2>🧠 Human Impact Intelligence</h2>
+<section>
+<h2>🌞 Heat & Cold Stress</h2>
 <div class="cards">
-  <div class="card">Travel Safety<br><b id="travelSafety">--</b></div>
-  <div class="card">Lightning Risk<br><b id="lightningRisk">--</b></div>
-  <div class="card">Outdoor Advisory<br><b id="outdoorAdvisory">--</b></div>
-  <div class="card">Humidity Stress<br><b id="humidityStress">--</b></div>
-  <div class="card">Breathing Difficulty<br><b id="breathingRisk">--</b></div>
-  <div class="card">Soil Saturation<br><b id="soilSaturation">--</b></div>
-  <div class="card">Irrigation Advice<br><b id="irrigationAdvice">--</b></div>
-  <div class="card">Best Outdoor Time<br><b id="bestOutdoorTime">--</b></div>
-  <div class="card">Dehydration Risk<br><b id="dehydrationRisk">--</b></div>
-  <div class="card">Sleep Disturbance<br><b id="sleepDisturbance">--</b></div>
-  <div class="card">Mental Fatigue<br><b id="mentalFatigue">--</b></div>
+  <div class="card">UV Index<b id="uv">--</b></div>
+  <div class="card">Sunburn Risk<b id="sunburn">--</b></div>
+  <div class="card">Wet-Bulb Temp<b id="wetbulb">--</b></div>
+  <div class="card">Cold Exposure<b id="coldRisk">--</b></div>
 </div>
+</section>
 
-<div class="footer">© Manik Roy 2025. All Rights Reserved.</div>
+<section>
+<h2>🧠 Human Impact</h2>
+<div class="cards">
+  <div class="card">Weather Mood<b id="mood">--</b></div>
+  <div class="card">Productivity<b id="productivity">--</b></div>
+  <div class="card">Best Outdoor Time<b id="bestTime">--</b></div>
+</div>
+<small>Indicative insights. Not medical advice.</small>
+</section>
+
+<section>
+<h2>📆 7‑Day Temperature</h2>
+<div class="cards">
+  <div class="card">7‑Day Min / Max<b id="temp7">--</b></div>
+</div>
+</section>
+
+<section>
+<h2>🌅 Sun & Trust</h2>
+<div class="cards">
+  <div class="card">Sunrise / Sunset<b id="sun">--</b></div>
+  <div class="card">Golden Hour<b id="golden">--</b></div>
+  <div class="card">Data Confidence<b>Medium</b></div>
+  <div class="card">Last Updated<b id="updated">--</b></div>
+</div>
+</section>
+
+<footer>© Manik Roy 2025. All Rights Reserved.</footer>
 </div>
 
 <script>
-const DEF={lat:22.5726,lon:88.3639,name:"Kolkata, India"};
+const city=document.getElementById('city');
+const temp=document.getElementById('temp');
+const feels=document.getElementById('feels');
+const humidity=document.getElementById('humidity');
+const wind=document.getElementById('wind');
+const temp24=document.getElementById('temp24');
+const rain24=document.getElementById('rain24');
+const temp7=document.getElementById('temp7');
+const rainIntensity=document.getElementById('rainIntensity');
+const rainProb=document.getElementById('rainProb');
+const stormETA=document.getElementById('stormETA');
+const roadRisk=document.getElementById('roadRisk');
+const pm25=document.getElementById('pm25');
+const aqiChild=document.getElementById('aqiChild');
+const aqiOld=document.getElementById('aqiOld');
+const aqiAsthma=document.getElementById('aqiAsthma');
+const uv=document.getElementById('uv');
+const sunburn=document.getElementById('sunburn');
+const wetbulb=document.getElementById('wetbulb');
+const coldRisk=document.getElementById('coldRisk');
+const mood=document.getElementById('mood');
+const productivity=document.getElementById('productivity');
+const bestTime=document.getElementById('bestTime');
+const sun=document.getElementById('sun');
+const golden=document.getElementById('golden');
+const updated=document.getElementById('updated');
 
-const pm25ToAQI=pm=>{
-  const bp=[[0,12,0,50],[12.1,35.4,51,100],[35.5,55.4,101,150],
-  [55.5,150.4,151,200],[150.5,250.4,201,300],[250.5,500,301,500]];
-  for(const [bL,bH,aL,aH] of bp)
-    if(pm>=bL&&pm<=bH)
-      return Math.round(((aH-aL)/(bH-bL))*(pm-bL)+aL);
-  return 500;
-};
-const AQICat=a=>a<50?"Good":a<100?"Moderate":a<200?"Poor":a<300?"Very Poor":"Severe";
-const Mask=a=>a<50?"Not required":a<100?"Optional":a<200?"Recommended":"Mandatory";
-const hourIndex=(t,c)=>{const h=c.slice(0,13);const i=t.findIndex(x=>x.startsWith(h));return i>=0?i:0;};
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');
+}
+if(localStorage.getItem('theme')==='light')document.body.classList.add('light');
 
-async function loadData(lat,lon,name){
-locationName.innerText=name;
+function wetBulbTemp(t,h){
+  return (t*Math.atan(0.151977*Math.sqrt(h+8.313659))
+  +Math.atan(t+h)-Math.atan(h-1.676331)
+  +0.00391838*Math.pow(h,1.5)*Math.atan(0.023101*h)-4.686035).toFixed(1);
+}
 
-const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability&daily=temperature_2m_min,temperature_2m_max,precipitation_sum&timezone=auto`).then(r=>r.json());
-const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`).then(r=>r.json());
+function addHour(time,offset){
+  let [h,m]=time.split(':').map(Number);
+  h=(h+offset+24)%24;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
 
-const idx=hourIndex(w.hourly.time,w.current_weather.time);
-
-currentTemp.innerText=w.current_weather.temperature+"°C";
-todayMin.innerText=w.daily.temperature_2m_min[0]+"°";
-todayMax.innerText=w.daily.temperature_2m_max[0]+"°";
-
-const t24=w.hourly.temperature_2m.slice(idx,idx+24);
-temp24Min.innerText=Math.min(...t24)+"°";
-temp24Max.innerText=Math.max(...t24)+"°";
-
-weekTemp.innerHTML="";
-for(let i=0;i<7;i++)
-  weekTemp.innerHTML+=`<div class="card">Day ${i+1}<br><b>${w.daily.temperature_2m_min[i]}°</b> / <b>${w.daily.temperature_2m_max[i]}°</b></div>`;
-
-const pm24=a.hourly.pm2_5.slice(idx,idx+24).map(pm25ToAQI);
-aqiNow.innerText=pm24[0];
-aqiCat.innerText=AQICat(pm24[0]);
-maskAdvice.innerText=Mask(pm24[0]);
-aqi24Min.innerText=Math.min(...pm24);
-aqi24Max.innerText=Math.max(...pm24);
-
-const rain24=w.hourly.precipitation.slice(idx,idx+24);
-rainNow.innerText=rain24[0].toFixed(1)+" mm";
-rain24Min.innerText=Math.min(...rain24).toFixed(1)+" mm";
-rain24Max.innerText=Math.max(...rain24).toFixed(1)+" mm";
-rainProb.innerText=Math.max(...w.hourly.precipitation_probability.slice(idx,idx+24))+"%";
-
-const rain3h=rain24.slice(0,3).reduce((a,b)=>a+b,0);
-rainAlert.innerText=rain3h>5?"Heavy rain":"No rain";
-stormAlert.innerText=rain3h>10?"Thunderstorm risk":"None";
-
-const weeklyRain=w.daily.precipitation_sum.reduce((a,b)=>a+b,0);
-monsoonArrival.innerText=weeklyRain>=50?"Arrived":weeklyRain>=25?"Onset":"Not Yet";
-
-const rainyDays=w.daily.precipitation_sum.filter(r=>r>2).length;
-const consistency=Math.round((rainyDays/7)*100);
-monsoonConsistency.innerText=consistency+"/100";
-
-const dryDays=w.daily.precipitation_sum.filter(r=>r<1).length;
-drySpellRisk.innerText=dryDays>=4?"High":dryDays>=2?"Moderate":"Low";
-
-excessRain.innerText=weeklyRain>=300?"Flood Risk":weeklyRain>=180?"Excess":weeklyRain>=80?"Normal":"Weak";
-
-let health=0;
-if(weeklyRain>50)health++;
-if(consistency>50)health++;
-if(w.current_weather.temperature<35)health++;
-if(dryDays<=2)health++;
-if(weeklyRain<250)health++;
-monsoonHealth.innerText=health+"/5";
-monsoonHealthText.innerText=health>=4?"Excellent":health>=3?"Good":health>=2?"Average":"Poor";
-
-agriSuit.innerText=weeklyRain<20?"Poor":weeklyRain<=150?"Ideal":weeklyRain<=300?"Watch":"Risky";
-drainageStress.innerText=weeklyRain>=250?"High":weeklyRain>=120?"Moderate":"Low";
-coolingEffect.innerText=Math.max(0,Math.round(w.daily.temperature_2m_max[0]-w.current_weather.temperature));
-rainReliability.innerText=consistency>70?"Reliable":consistency>40?"Uncertain":"Erratic";
-monsoonMood.innerText=weeklyRain>50&&w.current_weather.temperature<32?"Pleasant":weeklyRain>20?"Sticky":"Oppressive";
-
-let flood=0;
-if(rain3h>=30)flood+=35;
-else if(rain3h>=20)flood+=25;
-else if(rain3h>=10)flood+=15;
-const rain24Total=rain24.reduce((a,b)=>a+b,0);
-if(rain24Total>=120)flood+=30;
-else if(rain24Total>=80)flood+=20;
-else if(rain24Total>=40)flood+=10;
-if(drainageStress.innerText==="High")flood+=20;
-else if(drainageStress.innerText==="Moderate")flood+=10;
-flood=Math.min(100,flood);
-floodProb.innerText=flood+"%";
-
-const rainNext6=rain24.slice(0,6);
-const maxHour=Math.max(...rainNext6);
-rainBurst.innerText=maxHour>=50?"Extreme":maxHour>=30?"Severe":maxHour>=15?"Moderate":"None";
-
-let timeline=0;
-const rain6h=rainNext6.reduce((a,b)=>a+b,0);
-const rain12h=w.hourly.precipitation.slice(idx,idx+12).reduce((a,b)=>a+b,0);
-if(rain6h>=80)timeline+=40;
-else if(rain6h>=50)timeline+=30;
-else if(rain6h>=30)timeline+=20;
-if(rain12h>=150)timeline+=30;
-else if(rain12h>=100)timeline+=20;
-else if(rain12h>=60)timeline+=10;
-if(rainBurst.innerText==="Extreme")timeline+=25;
-else if(rainBurst.innerText==="Severe")timeline+=15;
-timeline=Math.min(100,timeline);
-floodTimeline.innerText=timeline+"%";
-
-/* HUMAN IMPACT */
-travelSafety.innerText=timeline>=60?"Avoid":flood>=30?"Caution":"Safe";
-lightningRisk.innerText=rain3h>20?"High":rain3h>5?"Moderate":"Low";
-outdoorAdvisory.innerText=timeline>=60||lightningRisk.innerText==="High"?"Cancel":rainBurst.innerText!=="None"?"Restricted":"Normal";
-humidityStress.innerText=w.current_weather.temperature>=35?"Dangerous":w.current_weather.temperature>=30?"Sticky":"Comfortable";
-breathingRisk.innerText=pm24[0]>=200?"Severe":pm24[0]>=100?"Moderate":"Low";
-soilSaturation.innerText=weeklyRain>=200?"Fully Saturated":weeklyRain>=100?"Wet":weeklyRain>=40?"Moist":"Dry";
-irrigationAdvice.innerText=soilSaturation.innerText==="Fully Saturated"?"Stop":soilSaturation.innerText==="Wet"?"None":soilSaturation.innerText==="Moist"?"Light":"Normal";
-let best="Limited";
-for(let i=0;i<24;i++){
-  if(w.hourly.temperature_2m[idx+i]<=30 && pm24[i]<100 && w.hourly.precipitation_probability[idx+i]<30){
-    best=new Date(w.hourly.time[idx+i]).getHours()+":00";
-    break;
+async function load(lat,lon,name){
+  // Reverse geocoding for accurate city name
+  if(name==='My Location'){
+    try{
+      const geo=await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1`).then(r=>r.json());
+      if(geo.results && geo.results.length>0){
+        const r = geo.results[0];
+        city.innerText = r.name + (r.country ? ', ' + r.country : '');
+      } else {
+        city.innerText = 'My Location';
+      }
+    } catch {
+      city.innerText = 'My Location';
+    }
+  } else {
+    city.innerText = name;
   }
-}
-bestOutdoorTime.innerText=best;
-dehydrationRisk.innerText=w.current_weather.temperature>=38?"Very High":w.current_weather.temperature>=33?"High":w.current_weather.temperature>=28?"Moderate":"Low";
-sleepDisturbance.innerText=w.current_weather.temperature>=28?"Poor":"Good";
-mentalFatigue.innerText=w.current_weather.temperature>=35 && pm24[0]>=100?"High":w.current_weather.temperature>=30?"Moderate":"Low";
+  city.innerText=name;
+  const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset,uv_index_max&current_weather=true&timezone=auto`).then(r=>r.json());
+  const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`).then(r=>r.json());
+
+  let idx=w.hourly.time.indexOf(w.current_weather.time);
+  if(idx===-1) idx=0; // fallback for API time mismatch
+  const t=w.current_weather.temperature;
+  
+  // 24h temperature min/max
+  const temps24=w.hourly.temperature_2m.slice(idx,idx+24);
+  const min24=Math.min(...temps24);
+  const max24=Math.max(...temps24);
+
+  // 24h rain sum
+  const rain24sum=w.hourly.precipitation.slice(idx,idx+24).reduce((a,b)=>a+b,0);
+
+  // 7-day min/max
+  const min7=Math.min(...w.daily.temperature_2m_min);
+  const max7=Math.max(...w.daily.temperature_2m_max);
+  const h=w.hourly.relative_humidity_2m[idx];
+  const windv=w.current_weather.windspeed;
+  const rainP=w.hourly.precipitation_probability ? w.hourly.precipitation_probability[idx] : 0;
+  const rainMM=w.hourly.precipitation ? w.hourly.precipitation[idx] : 0;
+  const pm=a.hourly.pm2_5 ? a.hourly.pm2_5[idx] : null;
+
+  temp.innerText=`${t}°C`;
+  temp24.innerText=`${min24.toFixed(1)}° / ${max24.toFixed(1)}°`;
+  rain24.innerText=`${rain24sum.toFixed(1)} mm`;
+  temp7.innerText=`${min7.toFixed(1)}° / ${max7.toFixed(1)}°`;
+  feels.innerText=`${(t+0.05*h-0.15*windv).toFixed(1)}°C`;
+  humidity.innerText=`${h}%`;
+  wind.innerText=`${windv} km/h`;
+
+  rainProb.innerText=`${rainP}%`;
+  rainIntensity.innerText=rainMM===0?'None':rainMM<2?'Light':rainMM<10?'Moderate':'Heavy';
+  stormETA.innerText=rainMM>=10?'High':'Low';
+  roadRisk.innerText=rainMM>=10?'Avoid':rainMM>=2?'Caution':'Safe';
+
+  pm25.innerText = pm !== null ? Math.round(pm) : 'N/A';
+  aqiChild.innerText = pm === null ? 'N/A' : (pm>35?'High':'Low');
+  aqiOld.innerText = pm === null ? 'N/A' : (pm>55?'High':'Moderate');
+  aqiAsthma.innerText = pm === null ? 'N/A' : (pm>25?'High':'Low');
+
+  const uvmax=w.daily.uv_index_max[0];
+  uv.innerText=uvmax;
+  sunburn.innerText=uvmax>=8?'Severe':uvmax>=5?'High':'Low';
+
+  wetbulb.innerText=`${wetBulbTemp(t,h)}°C`;
+  coldRisk.innerText=t<=8?'High':'Low';
+
+  mood.innerText=rainMM>=10?'Irritable':t>=35?'Drained':'Calm';
+  productivity.innerText=(t>=20&&t<=30&&rainMM<2)?'High':'Low';
+  bestTime.innerText=(uvmax<6&&rainMM<2)?'Morning':'Evening';
+
+  const sunrise=w.daily.sunrise[0].slice(11,16);
+  const sunset=w.daily.sunset[0].slice(11,16);
+  sun.innerText=`${sunrise} / ${sunset}`;
+  golden.innerText=`${sunrise}–${addHour(sunrise,1)} / ${addHour(sunset,-1)}–${sunset}`;
+
+  updated.innerText=new Date().toLocaleTimeString();
 }
 
-function autoDetect(){
-navigator.geolocation?.getCurrentPosition(
-p=>loadData(p.coords.latitude,p.coords.longitude,"My Location"),
-()=>loadData(DEF.lat,DEF.lon,DEF.name),
-{timeout:8000});
+function useMyLocation(){
+  navigator.geolocation.getCurrentPosition(
+    p=>load(p.coords.latitude,p.coords.longitude,'My Location'),
+    ()=>load(22.57,88.36,'Kolkata')
+  );
 }
-function searchCity(){
-if(!cityInput.value)return;
-fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${cityInput.value}&count=1`)
-.then(r=>r.json()).then(g=>{
-if(g.results){
-const r=g.results[0];
-loadData(r.latitude,r.longitude,r.name+", "+r.country);
-}});
+async function searchCity(){
+  const q=document.getElementById('search').value;
+  if(!q)return;
+  const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json());
+  if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);
 }
-function useMyLocation(){autoDetect();}
-window.onload=autoDetect;
+useMyLocation();
 </script>
-
 </body>
 </html>
