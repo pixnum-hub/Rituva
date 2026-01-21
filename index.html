@@ -5,76 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
 <style>
 :root{
-  --bg:#000;
-  --card:#1a1a1a;
-  --soft:#222;
-  --text:#fff;
-  --muted:#9a9a9a;
-  --radius:26px;
+  --bg:#000;--card:#1a1a1a;--soft:#222;
+  --text:#fff;--muted:#9a9a9a;--radius:26px;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,system-ui;
-}
-.app{
-  max-width:430px;
-  margin:0 auto;
-  padding:18px;
-}
-.header h1{
-  font-size:34px;
-  font-weight:800;
-  margin-bottom:18px;
-}
-.search-box{
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-  margin-bottom:28px;
-}
-.search-box input,
-.search-box button{
-  padding:18px;
-  font-size:18px;
-  border:none;
-  border-radius:26px;
-  background:#222;
-  color:#fff;
+body{margin:0;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,system-ui}
+.app{max-width:430px;margin:auto;padding:18px}
+.header h1{font-size:34px;font-weight:800;margin-bottom:18px}
+.search-box{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
+.search-box input,.search-box button{
+  padding:18px;font-size:18px;border:none;
+  border-radius:var(--radius);background:var(--soft);color:var(--text)
 }
 .hero{text-align:center}
-.hero small{color:#9a9a9a;font-size:18px}
+.hero small{color:var(--muted);font-size:18px}
 .hero-temp{font-size:84px;font-weight:800;margin:12px 0 22px}
 .section-title{font-size:26px;font-weight:700;margin:30px 0 16px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.card{
-  background:#1a1a1a;
-  padding:22px;
-  border-radius:26px;
-  text-align:center;
-}
-.card small{color:#9a9a9a;font-size:15px}
+.card{background:var(--card);padding:22px;border-radius:var(--radius);text-align:center}
+.card small{color:var(--muted);font-size:15px}
 .card b{display:block;font-size:30px;margin-top:6px}
 .full{grid-column:1/-1}
 #rainChart{display:flex;gap:4px;height:120px;align-items:flex-end}
-footer{text-align:center;color:#9a9a9a;font-size:14px;margin:40px 0 10px}
+.bar{flex:1;border-radius:6px}
+footer{text-align:center;color:var(--muted);font-size:14px;margin:40px 0 10px}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<div class="header">
-  <h1 id="title">🌦️ Rituva</h1>
-</div>
+<div class="header"><h1>🌦️ Rituva</h1></div>
 
 <div class="search-box">
   <input id="search" placeholder="Search city"
-    onkeydown="if(event.key==='Enter')searchCity()">
+   onkeydown="if(event.key==='Enter')searchCity()">
   <button onclick="searchCity()">Search</button>
   <button onclick="useMyLocation()">📍 Use My Location</button>
 </div>
@@ -96,10 +67,18 @@ footer{text-align:center;color:#9a9a9a;font-size:14px;margin:40px 0 10px}
   <div class="card"><small>Cyclone Alert</small><b id="cyclone">--</b></div>
 </div>
 
-<div class="section-title">📊 Hourly Rain (24h)</div>
+<div class="section-title">🌬 Air Quality</div>
+<div class="grid">
+  <div class="card full"><small>PM2.5 (µg/m³)</small><b id="pm25">--</b></div>
+  <div class="card"><small>Children</small><b id="aqiChild">--</b></div>
+  <div class="card"><small>Elderly</small><b id="aqiOld">--</b></div>
+  <div class="card"><small>Asthma</small><b id="aqiAsthma">--</b></div>
+</div>
+
+<div class="section-title">📊 Hourly Rain</div>
 <div id="rainChart"></div>
 
-<div class="section-title">📅 7-Day Rain (mm)</div>
+<div class="section-title">📅 7-Day Rain</div>
 <div class="grid" id="weeklyRain"></div>
 
 <div class="section-title">🌧 Monsoon Intelligence</div>
@@ -108,24 +87,32 @@ footer{text-align:center;color:#9a9a9a;font-size:14px;margin:40px 0 10px}
   <div class="card"><small>Monsoon Severity</small><b id="msi">--</b></div>
 </div>
 
-<div class="section-title">🌅 Sun & Trust</div>
+<div class="section-title">🌅 Sun</div>
 <div class="grid">
   <div class="card"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
   <div class="card"><small>Last Updated</small><b id="updated">--</b></div>
 </div>
 
-<footer>
-© Manik Roy 2025 · Indicative insights only
-</footer>
+<footer>© Manik Roy 2025 · Indicative insights only</footer>
 </div>
 
 <script>
-const el = {};
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("service-worker.js");
+}
+
+const el={};
 [
 "temp","humidity","wind","rainProb","rainIntensity","totalRain",
-"floodProb","roadRisk","cyclone",
-"monsoon","msi","sun","updated"
+"floodProb","roadRisk","cyclone","monsoon","msi","sun","updated",
+"pm25","aqiChild","aqiOld","aqiAsthma"
 ].forEach(id=>el[id]=document.getElementById(id));
+
+function safeIndex(times){
+  const now=new Date();
+  const i=times.findIndex(t=>Math.abs(new Date(t)-now)<36e5);
+  return i>=0?i:0;
+}
 
 function drawRainChart(data){
   const c=document.getElementById("rainChart");
@@ -133,10 +120,9 @@ function drawRainChart(data){
   const m=Math.max(...data,1);
   data.forEach(v=>{
     const b=document.createElement("div");
-    b.style.flex="1";
+    b.className="bar";
     b.style.height=(v/m*100)+"%";
-    b.style.background=v>10?"#0288d1":v>2?"#4fc3f7":"#263238";
-    b.style.borderRadius="6px";
+    b.style.background=v>10?"#0277bd":v>2?"#4fc3f7":"#263238";
     c.appendChild(b);
   });
 }
@@ -148,10 +134,15 @@ const w=await fetch(
 `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m&daily=sunrise,sunset&current_weather=true&timezone=auto`
 ).then(r=>r.json());
 
-const i=w.hourly.time.indexOf(w.current_weather.time);
-const t=w.current_weather.temperature;
+const a=await fetch(
+`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5&timezone=auto`
+).then(r=>r.json()).catch(()=>null);
+
+const i=safeIndex(w.hourly.time);
+
+const t=w.current_weather?.temperature ?? w.hourly.temperature_2m[i];
 const h=w.hourly.relative_humidity_2m[i];
-const wind=w.current_weather.windspeed*3.6;
+const wind=(w.current_weather?.windspeed ?? w.hourly.wind_speed_10m[i])*3.6;
 const rp=w.hourly.precipitation_probability[i];
 const hourlyRain=w.hourly.precipitation.slice(i,i+24);
 const totalRain=hourlyRain.reduce((a,b)=>a+b,0);
@@ -179,8 +170,8 @@ el.cyclone.innerText=
 (wind>=45&&rp>=80&&totalRain>=30)?"Watch 🌀":"None";
 
 const month=new Date().getMonth();
-const monsoon=(month>=5&&month<=8)||totalRain>=15||rp>=60;
-el.monsoon.innerText=monsoon?"Active 🌧️":"Inactive";
+el.monsoon.innerText=
+((month>=5&&month<=8)||totalRain>=15||rp>=60)?"Active 🌧️":"Inactive";
 
 let msi=0;
 msi+=Math.min(totalRain/10,5);
@@ -190,13 +181,19 @@ msi=Math.min(Math.round(msi),10);
 const label=msi>=9?"Extreme":msi>=7?"Heavy":msi>=5?"Active":msi>=3?"Normal":"Weak";
 el.msi.innerText=`${msi}/10 · ${label}`;
 
+const pm=a?.hourly?.pm2_5?.[i] ?? a?.hourly?.pm2_5?.[0] ?? 0;
+el.pm25.innerText=Math.round(pm);
+el.aqiChild.innerText=pm>75?"High":pm>35?"Moderate":"Low";
+el.aqiOld.innerText=pm>100?"High":pm>50?"Moderate":"Low";
+el.aqiAsthma.innerText=pm>60?"High":"Low";
+
 drawRainChart(hourlyRain);
 
 const wr=document.getElementById("weeklyRain");
 wr.innerHTML="";
 for(let d=0;d<7;d++){
-const r=w.hourly.precipitation.slice(d*24,d*24+24).reduce((a,b)=>a+b,0);
-wr.innerHTML+=`<div class="card"><small>Day ${d+1}</small><b>${r.toFixed(1)} mm</b></div>`;
+  const r=w.hourly.precipitation.slice(d*24,d*24+24).reduce((a,b)=>a+b,0);
+  wr.innerHTML+=`<div class="card"><small>Day ${d+1}</small><b>${r.toFixed(1)} mm</b></div>`;
 }
 
 el.sun.innerText=
@@ -211,6 +208,7 @@ p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
 }
 function searchCity(){
 const q=document.getElementById("search").value;
+if(!q)return;
 fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`)
 .then(r=>r.json())
 .then(g=>g.results&&load(g.results[0].latitude,g.results[0].longitude,g.results[0].name));
