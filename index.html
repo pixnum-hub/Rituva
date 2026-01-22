@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rituva</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000">
+<meta name="theme-color" content="#000000">
 
 <style>
 :root{
@@ -15,176 +13,211 @@
 --soft:#222;
 --text:#fff;
 --muted:#9a9a9a;
---radius:26px
+--radius:26px;
 }
 .light{
---bg:#f5f5f5;
+--bg:#f4f6f8;
 --card:#fff;
---soft:#e6e6e6;
---text:#000;
---muted:#555
+--soft:#e8eaed;
+--text:#111;
+--muted:#666;
 }
 .oled{
 --bg:#000;
 --card:#000;
 --soft:#000;
 --text:#fff;
---muted:#777
+--muted:#777;
 }
-
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui}
+body{
+margin:0;
+background:var(--bg);
+color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,system-ui;
+}
 .app{max-width:430px;margin:auto;padding:18px}
-h1{text-align:center;font-size:34px;margin-bottom:6px}
-.section-title{font-size:24px;margin:26px 0 14px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--card);padding:20px;border-radius:var(--radius);text-align:center}
+h1{font-size:34px;margin-bottom:14px}
+h2{font-size:24px;margin:28px 0 14px}
+button,input{
+width:100%;
+padding:16px;
+margin-bottom:10px;
+border:none;
+border-radius:var(--radius);
+background:var(--soft);
+color:var(--text);
+font-size:16px;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{
+background:var(--card);
+padding:18px;
+border-radius:var(--radius);
+text-align:center;
+}
 .card small{color:var(--muted)}
 .card b{font-size:28px;display:block;margin-top:6px}
 .full{grid-column:1/-1}
-.hero{text-align:center;margin-top:10px}
-.hero-temp{font-size:88px;font-weight:800}
-input,button{width:100%;padding:16px;border-radius:20px;border:none;background:var(--soft);color:var(--text);font-size:17px;margin-bottom:10px}
-footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
+.hero{text-align:center;margin:18px 0}
+.hero b{font-size:82px}
+footer{
+text-align:center;
+color:var(--muted);
+font-size:14px;
+margin:40px 0 10px;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<h1>🌦 Rituva</h1>
+<h1>🌦️ Rituva</h1>
 
-<button onclick="toggleTheme()">🌓 Dark / Light</button>
+<button onclick="toggleTheme()">🌗 Light / Dark</button>
 <button onclick="toggleOLED()">🖤 OLED True Black</button>
+<button onclick="toggleUnit()">🌡 °C / °F</button>
 
 <input id="search" placeholder="Search city" onkeydown="if(event.key==='Enter')searchCity()">
 <button onclick="searchCity()">Search</button>
 <button onclick="useMyLocation()">📍 Use My Location</button>
 
 <div class="hero">
-<small id="city">Loading…</small>
-<div class="hero-temp" id="temp">--°</div>
+<small id="city">My Location</small>
+<b id="temp">--</b>
 </div>
 
-<div class="section-title">🌡 Temperature</div>
+<h2>🌡 Temperature</h2>
 <div class="grid">
 <div class="card"><small>Today Min</small><b id="tmin">--</b></div>
 <div class="card"><small>Today Max</small><b id="tmax">--</b></div>
-<div class="card"><small>24h Min</small><b id="hmin">--</b></div>
-<div class="card"><small>24h Max</small><b id="hmax">--</b></div>
+<div class="card"><small>24h Min</small><b id="t24min">--</b></div>
+<div class="card"><small>24h Max</small><b id="t24max">--</b></div>
+<div class="card"><small>7-Day Min</small><b id="t7min">--</b></div>
+<div class="card"><small>7-Day Max</small><b id="t7max">--</b></div>
 </div>
 
-<div class="section-title">🌧 Rain & Monsoon</div>
+<h2>🌧 Rain & Monsoon</h2>
 <div class="grid">
-<div class="card"><small>Rain (24h)</small><b id="rain">-- mm</b></div>
-<div class="card"><small>Monsoon Index</small><b id="monsoon">--</b></div>
-<div class="card"><small>Flood Risk</small><b id="flood">--</b></div>
+<div class="card"><small>Hourly Rain</small><b id="rain">--</b></div>
+<div class="card"><small>24h Rain</small><b id="rain24">--</b></div>
+<div class="card"><small>7-Day Rain</small><b id="rain7">--</b></div>
+<div class="card"><small>Flood Probability</small><b id="flood">--</b></div>
+<div class="card"><small>Monsoon Severity</small><b id="monsoon">--</b></div>
 <div class="card"><small>Cyclone Alert</small><b id="cyclone">--</b></div>
 </div>
 
-<div class="section-title">🌬 Air Quality</div>
+<h2>🌬 Air Quality</h2>
 <div class="grid">
 <div class="card full"><small>PM2.5</small><b id="pm">--</b></div>
-<div class="card"><small>Children</small><b id="aqiC">--</b></div>
-<div class="card"><small>Elderly</small><b id="aqiE">--</b></div>
-<div class="card"><small>Asthma</small><b id="aqiA">--</b></div>
+<div class="card"><small>Children</small><b id="child">--</b></div>
+<div class="card"><small>Elderly</small><b id="old">--</b></div>
+<div class="card"><small>Asthma</small><b id="asthma">--</b></div>
 </div>
 
-<div class="section-title">🧠 Human Impact</div>
+<h2>🔥 Heat • Night • Power</h2>
 <div class="grid">
-<div class="card"><small>Heatwave</small><b id="heat">--</b></div>
+<div class="card"><small>Heatwave Index</small><b id="heat">--</b></div>
 <div class="card"><small>Night Discomfort</small><b id="night">--</b></div>
-<div class="card"><small>Mood</small><b id="mood">--</b></div>
-<div class="card"><small>Productivity</small><b id="prod">--</b></div>
-<div class="card full"><small>Best Outdoor Time</small><b id="outdoor">--</b></div>
+<div class="card full"><small>Power Demand</small><b id="power">--</b></div>
 </div>
 
-<div class="section-title">☀️ Solar</div>
+<h2>🌅 Sun</h2>
 <div class="grid">
-<div class="card"><small>UV Index</small><b id="uv">--</b></div>
-<div class="card"><small>Sunburn</small><b id="sunburn">--</b></div>
-<div class="card"><small>Wet Bulb</small><b id="wet">--</b></div>
-<div class="card"><small>Cold Risk</small><b id="cold">--</b></div>
+<div class="card full"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
 </div>
 
-<footer>© Manik Roy · Indicative insights</footer>
+<h2>ℹ️ Data Status</h2>
+<div class="grid">
+<div class="card full"><small>Last Updated</small><b id="updated">--</b></div>
+</div>
+
+<footer>© Manik Roy 2025. All Rights Reserved.</footer>
 
 </div>
 
 <script>
 const $=id=>document.getElementById(id)
+let UNIT=localStorage.unit||"C"
+let lastData=null
 
-function toggleTheme(){
-document.body.classList.toggle("light")
-localStorage.setItem("theme",document.body.classList.contains("light")?"light":"dark")
+function toTemp(c){return UNIT==="C"?`${c.toFixed(1)}°C`:`${((c*9/5)+32).toFixed(1)}°F`}
+
+function toggleUnit(){UNIT=UNIT==="C"?"F":"C";localStorage.unit=UNIT;if(lastData)applyData(lastData);updateTimestamp()}
+
+function toggleTheme(){document.body.classList.toggle("light");localStorage.theme=document.body.classList.contains("light")?"light":"dark"}
+function toggleOLED(){document.body.classList.toggle("oled");localStorage.oled=document.body.classList.contains("oled")?"on":"off"}
+if(localStorage.theme==="light")document.body.classList.add("light")
+if(localStorage.oled==="on")document.body.classList.add("oled")
+
+function updateTimestamp(){
+const now=new Date()
+$("updated").innerText=now.toLocaleDateString()+" "+now.toLocaleTimeString()
 }
-function toggleOLED(){
-document.body.classList.toggle("oled")
-localStorage.setItem("oled",document.body.classList.contains("oled")?"on":"off")
+
+function applyData({w,a}){
+const t=w.hourly.temperature_2m[0]
+$("temp").innerText=toTemp(t)
+
+$("tmin").innerText=toTemp(w.daily.temperature_2m_min[0])
+$("tmax").innerText=toTemp(w.daily.temperature_2m_max[0])
+
+const t24=w.hourly.temperature_2m.slice(0,24)
+$("t24min").innerText=toTemp(Math.min(...t24))
+$("t24max").innerText=toTemp(Math.max(...t24))
+
+$("t7min").innerText=toTemp(Math.min(...w.daily.temperature_2m_min))
+$("t7max").innerText=toTemp(Math.max(...w.daily.temperature_2m_max))
+
+const rain24=w.hourly.precipitation.slice(0,24).reduce((a,b)=>a+b,0)
+$("rain").innerText=w.hourly.precipitation[0].toFixed(1)+" mm"
+$("rain24").innerText=rain24.toFixed(1)+" mm"
+$("rain7").innerText=(rain24*3).toFixed(1)+" mm"
+
+$("flood").innerText=Math.min(100,Math.round(rain24*2))+"%"
+$("monsoon").innerText=rain24>60?"Extreme":rain24>30?"Strong":"Normal"
+$("cyclone").innerText=rain24>120?"Alert":"None"
+
+const pm=a.hourly.pm2_5[0]
+$("pm").innerText=Math.round(pm)+" µg/m³"
+$("child").innerText=pm>75?"High":"Low"
+$("old").innerText=pm>100?"High":"Moderate"
+$("asthma").innerText=pm>60?"High":"Low"
+
+$("heat").innerText=t>=40?"Severe":t>=35?"High":"Normal"
+$("night").innerText=t>=30?"Uncomfortable":"Normal"
+$("power").innerText=t>=35?"Peak Load":"Normal"
+
+$("sun").innerText=w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16)
+
+updateTimestamp()
 }
-if(localStorage.getItem("theme")==="light")document.body.classList.add("light")
-if(localStorage.getItem("oled")==="on")document.body.classList.add("oled")
 
 async function load(lat,lon,name){
 $("city").innerText=name
-
-const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_min,temperature_2m_max&current_weather=true&timezone=auto`).then(r=>r.json())
+try{
+const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset&timezone=auto`).then(r=>r.json())
 const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`).then(r=>r.json())
-
-const t=w.current_weather.temperature
-const h=w.hourly.relative_humidity_2m[0]
-const rain=w.hourly.precipitation.slice(0,24).reduce((a,b)=>a+b,0)
-const pm=a.hourly.pm2_5[0]
-
-$("temp").innerText=t+"°"
-$("tmin").innerText=w.daily.temperature_2m_min[0]+"°"
-$("tmax").innerText=w.daily.temperature_2m_max[0]+"°"
-$("hmin").innerText=Math.min(...w.hourly.temperature_2m.slice(0,24))+"°"
-$("hmax").innerText=Math.max(...w.hourly.temperature_2m.slice(0,24))+"°"
-
-$("rain").innerText=rain.toFixed(1)
-$("monsoon").innerText=rain>50?"Severe":rain>20?"Active":"Weak"
-$("flood").innerText=rain>100?"High":rain>50?"Moderate":"Low"
-$("cyclone").innerText="None"
-
-$("pm").innerText=Math.round(pm)
-$("aqiC").innerText=pm>75?"High":"Low"
-$("aqiE").innerText=pm>100?"High":"Moderate"
-$("aqiA").innerText=pm>60?"High":"Low"
-
-$("heat").innerText=t>=40?"Extreme":t>=35?"High":"Normal"
-$("night").innerText=(t>=28&&h>=70)?"High":"Low"
-$("mood").innerText=(t<=32&&h<=70)?"Positive":"Irritable"
-$("prod").innerText=(t>=22&&t<=30)?"High":"Low"
-$("outdoor").innerText=(t<=30&&rain<5)?"Morning / Evening":"Avoid Noon"
-
-const uv=Math.min(11,Math.round((t-20)/2))
-$("uv").innerText=uv
-$("sunburn").innerText=uv>=8?"Severe":uv>=5?"High":"Low"
-
-const wet=t*Math.atan(0.1519*Math.sqrt(h+8))-4.6
-$("wet").innerText=wet.toFixed(1)+"°C"
-$("cold").innerText=t<=10?"High":"Low"
+lastData={w,a}
+applyData(lastData)
+}catch{ $("temp").innerText="Offline" }
 }
 
 function useMyLocation(){
 navigator.geolocation.getCurrentPosition(
 p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
 ()=>load(22.57,88.36,"Kolkata")
-)}
+)
+}
 async function searchCity(){
-const q=$("search").value
-if(!q)return
-const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`).then(r=>r.json())
+if(!search.value)return
+const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${search.value}&count=1`).then(r=>r.json())
 if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name)
 }
 
 useMyLocation()
-
-if('serviceWorker' in navigator){
-const sw=`self.addEventListener('fetch',e=>e.respondWith(caches.open('rituva').then(c=>c.match(e.request)||fetch(e.request).then(r=>{c.put(e.request,r.clone());return r}))))`
-navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw])))
-}
 </script>
+
 </body>
 </html>
