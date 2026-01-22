@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva</title>
+<title>Rituva Weather</title>
 <meta name="theme-color" content="#000000">
-
 <style>
 :root{
 --bg:#000;
@@ -133,7 +132,7 @@ margin:40px 0 10px;
 <div class="card full"><small>Last Updated</small><b id="updated">--</b></div>
 </div>
 
-<footer>© Manik Roy 2026. All Rights Reserved.</footer>
+<footer>© Manik Roy 2025. All Rights Reserved.</footer>
 
 </div>
 
@@ -154,6 +153,15 @@ if(localStorage.oled==="on")document.body.classList.add("oled")
 function updateTimestamp(){
 const now=new Date()
 $("updated").innerText=now.toLocaleDateString()+" "+now.toLocaleTimeString()
+}
+
+function aqiColor(pm){
+if(pm<=50)return "#2ECC71";
+if(pm<=100)return "#F1C40F";
+if(pm<=150)return "#E67E22";
+if(pm<=200)return "#E74C3C";
+if(pm<=300)return "#8E44AD";
+return "#7B241C";
 }
 
 function applyData({w,a}){
@@ -181,9 +189,13 @@ $("cyclone").innerText=rain24>120?"Alert":"None"
 
 const pm=a.hourly.pm2_5[0]
 $("pm").innerText=Math.round(pm)+" µg/m³"
+$("pm").style.color = aqiColor(pm)
 $("child").innerText=pm>75?"High":"Low"
+$("child").style.color = aqiColor(pm)
 $("old").innerText=pm>100?"High":"Moderate"
+$("old").style.color = aqiColor(pm)
 $("asthma").innerText=pm>60?"High":"Low"
+$("asthma").style.color = aqiColor(pm)
 
 $("heat").innerText=t>=40?"Severe":t>=35?"High":"Normal"
 $("night").innerText=t>=30?"Uncomfortable":"Normal"
@@ -221,4 +233,3 @@ useMyLocation()
 
 </body>
 </html>
-
