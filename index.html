@@ -3,233 +3,334 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rituva Weather</title>
-<meta name="theme-color" content="#000000">
+<title>Rituva</title>
 <style>
 :root{
---bg:#000;
---card:#1a1a1a;
---soft:#222;
---text:#fff;
---muted:#9a9a9a;
---radius:26px;
+  --bg:#ffffff;
+  --card:#f2f2f2;
+  --text:#000000;
+  --muted:#555555;
+  --base-font:20px;
+  --card-padding:16px;
 }
-.light{
---bg:#f4f6f8;
---card:#fff;
---soft:#e8eaed;
---text:#111;
---muted:#666;
+body.dark{
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#ffffff;
+  --muted:#bdbdbd;
 }
-.oled{
---bg:#000;
---card:#000;
---soft:#000;
---text:#fff;
---muted:#777;
+body.oled{
+  --bg:#000000;
+  --card:#000000;
+  --text:#ffffff;
+  --muted:#cfcfcf;
 }
+body.elder{
+  --base-font:25px;
+  --card-padding:22px;
+}
+
 *{box-sizing:border-box}
 body{
-margin:0;
-background:var(--bg);
-color:var(--text);
-font-family:-apple-system,BlinkMacSystemFont,system-ui;
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont;
+  font-size:var(--base-font);
+  line-height:1.75;
 }
-.app{max-width:430px;margin:auto;padding:18px}
-h1{font-size:34px;margin-bottom:14px}
-h2{font-size:24px;margin:28px 0 14px}
-button,input{
-width:100%;
-padding:16px;
-margin-bottom:10px;
-border:none;
-border-radius:var(--radius);
-background:var(--soft);
-color:var(--text);
-font-size:16px;
+.app{
+  max-width:460px;
+  margin:0 auto;
+  padding-bottom:28px;
 }
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.app-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 14px;
+  gap:10px;
+}
+.title{
+  font-size:1.5em;
+  font-weight:900;
+}
+.city{
+  font-size:0.85em;
+  color:var(--muted);
+}
+.toggle{
+  padding:10px 16px;
+  font-size:0.8em;
+  border-radius:22px;
+  border:none;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+}
+.controls{
+  display:flex;
+  gap:10px;
+  padding:10px 14px;
+}
+input,button{
+  padding:16px;
+  font-size:1em;
+  border-radius:14px;
+  border:none;
+}
+input{flex:1}
+section{padding:14px}
+h2{
+  margin:10px 0 14px;
+  font-size:1.15em;
+}
+.cards{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+@media(min-width:480px){
+  .cards{grid-template-columns:1fr 1fr}
+}
 .card{
-background:var(--card);
-padding:18px;
-border-radius:var(--radius);
-text-align:center;
+  background:var(--card);
+  padding:var(--card-padding);
+  border-radius:18px;
+  min-height:120px;
 }
-.card small{color:var(--muted)}
-.card b{font-size:28px;display:block;margin-top:6px}
-.full{grid-column:1/-1}
-.hero{text-align:center;margin:18px 0}
-.hero b{font-size:82px}
+.card b{
+  display:block;
+  margin-top:8px;
+  font-size:1.3em;
+  font-weight:700;
+}
+.temp-value{
+  font-size:2.5em;
+  font-weight:900;
+}
+body.elder .temp-value{
+  font-size:3.3em;
+}
+small{
+  font-size:0.75em;
+  color:var(--muted);
+}
 footer{
-text-align:center;
-color:var(--muted);
-font-size:14px;
-margin:40px 0 10px;
+  text-align:center;
+  padding:16px;
+  font-size:0.7em;
+  color:var(--muted);
+}
+@media(min-width:768px){
+  body{display:flex;justify-content:center}
 }
 </style>
 </head>
-
 <body>
 <div class="app">
 
-<h1>🌦️ Rituva</h1>
-
-<button onclick="toggleTheme()">🌗 Light / Dark</button>
-<button onclick="toggleOLED()">🖤 OLED True Black</button>
-<button onclick="toggleUnit()">🌡 °C / °F</button>
-
-<input id="search" placeholder="Search city" onkeydown="if(event.key==='Enter')searchCity()">
-<button onclick="searchCity()">Search</button>
-<button onclick="useMyLocation()">📍 Use My Location</button>
-
-<div class="hero">
-<small id="city">My Location</small>
-<b id="temp">--</b>
+<!-- HEADER -->
+<div class="app-header">
+  <div>
+    <div class="title">Rituva</div>
+    <div class="city" id="city">Detecting location…</div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="toggle" id="elderToggle">🧓 XL</button>
+    <button class="toggle" id="themeToggle">🌙 Dark</button>
+  </div>
 </div>
 
-<h2>🌡 Temperature</h2>
-<div class="grid">
-<div class="card"><small>Today Min</small><b id="tmin">--</b></div>
-<div class="card"><small>Today Max</small><b id="tmax">--</b></div>
-<div class="card"><small>24h Min</small><b id="t24min">--</b></div>
-<div class="card"><small>24h Max</small><b id="t24max">--</b></div>
-<div class="card"><small>7-Day Min</small><b id="t7min">--</b></div>
-<div class="card"><small>7-Day Max</small><b id="t7max">--</b></div>
+<!-- SEARCH -->
+<div class="controls">
+  <input id="search" placeholder="Search city">
+  <button onclick="searchCity()">Search</button>
+  <button onclick="useMyLocation()">📍</button>
 </div>
 
-<h2>🌧 Rain & Monsoon</h2>
-<div class="grid">
-<div class="card"><small>Hourly Rain</small><b id="rain">--</b></div>
-<div class="card"><small>24h Rain</small><b id="rain24">--</b></div>
-<div class="card"><small>7-Day Rain</small><b id="rain7">--</b></div>
-<div class="card"><small>Flood Probability</small><b id="flood">--</b></div>
-<div class="card"><small>Monsoon Severity</small><b id="monsoon">--</b></div>
-<div class="card"><small>Cyclone Alert</small><b id="cyclone">--</b></div>
+<!-- CURRENT -->
+<section>
+<h2>🌡 Current Conditions</h2>
+<div class="cards">
+  <div class="card">Temperature<b id="temp" class="temp-value">--</b></div>
+  <div class="card">Feels Like<b id="feels">--</b></div>
+  <div class="card">Humidity<b id="humidity">--</b></div>
+  <div class="card">Wind<b id="wind">--</b></div>
 </div>
+</section>
 
+<!-- 24 HOUR -->
+<section>
+<h2>⏱ Next 24 Hours</h2>
+<div class="cards">
+  <div class="card">Min Temperature<b id="min24">--</b></div>
+  <div class="card">Max Temperature<b id="max24">--</b></div>
+  <div class="card">24h Rain Total<b id="rain24">--</b> <small>mm</small></div>
+</div>
+</section>
+
+<!-- 7 DAY -->
+<section>
+<h2>📅 7-Day Temperature</h2>
+<div class="cards" id="weekly"></div>
+</section>
+
+<!-- RAIN & STORM -->
+<section>
+<h2>🌧 Rain & Storm</h2>
+<div class="cards">
+  <div class="card">Rain Intensity<b id="rainIntensity">--</b></div>
+  <div class="card">Rain Probability<b id="rainProb">--</b></div>
+  <div class="card">Storm Likelihood<b id="stormETA">--</b></div>
+  <div class="card">Road Risk<b id="roadRisk">--</b></div>
+</div>
+</section>
+
+<!-- AIR QUALITY -->
+<section>
 <h2>🌬 Air Quality</h2>
-<div class="grid">
-<div class="card full"><small>PM2.5</small><b id="pm">--</b></div>
-<div class="card"><small>Children</small><b id="child">--</b></div>
-<div class="card"><small>Elderly</small><b id="old">--</b></div>
-<div class="card"><small>Asthma</small><b id="asthma">--</b></div>
+<div class="cards">
+  <div class="card">Estimated AQI (PM2.5)<b id="aqi">--</b><small>Model-based, not roadside sensors</small></div>
+  <div class="card">Children Impact<b id="aqiChild">--</b></div>
+  <div class="card">Elderly Impact<b id="aqiOld">--</b></div>
+  <div class="card">Asthma Impact<b id="aqiAsthma">--</b></div>
 </div>
+</section>
 
-<h2>🔥 Heat • Night • Power</h2>
-<div class="grid">
-<div class="card"><small>Heatwave Index</small><b id="heat">--</b></div>
-<div class="card"><small>Night Discomfort</small><b id="night">--</b></div>
-<div class="card full"><small>Power Demand</small><b id="power">--</b></div>
+<!-- HEAT & COLD -->
+<section>
+<h2>🌞 Heat & Cold Stress</h2>
+<div class="cards">
+  <div class="card">UV Index<b id="uv">--</b></div>
+  <div class="card">Sunburn Risk<b id="sunburn">--</b></div>
+  <div class="card">Wet Bulb Temp<b id="wetbulb">--</b></div>
+  <div class="card">Cold Exposure<b id="coldRisk">--</b></div>
 </div>
+</section>
 
-<h2>🌅 Sun</h2>
-<div class="grid">
-<div class="card full"><small>Sunrise / Sunset</small><b id="sun">--</b></div>
+<!-- HUMAN IMPACT -->
+<section>
+<h2>🧠 Human Impact</h2>
+<div class="cards">
+  <div class="card">Weather Mood<b id="mood">--</b></div>
+  <div class="card">Productivity<b id="productivity">--</b></div>
 </div>
+</section>
 
-<h2>ℹ️ Data Status</h2>
-<div class="grid">
-<div class="card full"><small>Last Updated</small><b id="updated">--</b></div>
+<!-- SUN -->
+<section>
+<h2>🌅 Sun & Trust</h2>
+<div class="cards">
+  <div class="card">Sunrise / Sunset<b id="sun">--</b></div>
+  <div class="card">Golden Hour<b>±1 hour</b></div>
+  <div class="card">Data Confidence<b>Medium</b></div>
+  <div class="card">Last Updated<b id="updated">--</b></div>
 </div>
+</section>
 
 <footer>© Manik Roy 2025. All Rights Reserved.</footer>
-
 </div>
 
 <script>
-const $=id=>document.getElementById(id)
-let UNIT=localStorage.unit||"C"
-let lastData=null
+/* THEME + ELDER */
+const themeBtn=document.getElementById("themeToggle");
+const elderBtn=document.getElementById("elderToggle");
+const themes=["light","dark","oled"];
+let themeIndex=+localStorage.getItem("theme")||0;
+let elderOn=localStorage.getItem("elder")==="true";
 
-function toTemp(c){return UNIT==="C"?`${c.toFixed(1)}°C`:`${((c*9/5)+32).toFixed(1)}°F`}
-
-function toggleUnit(){UNIT=UNIT==="C"?"F":"C";localStorage.unit=UNIT;if(lastData)applyData(lastData);updateTimestamp()}
-
-function toggleTheme(){document.body.classList.toggle("light");localStorage.theme=document.body.classList.contains("light")?"light":"dark"}
-function toggleOLED(){document.body.classList.toggle("oled");localStorage.oled=document.body.classList.contains("oled")?"on":"off"}
-if(localStorage.theme==="light")document.body.classList.add("light")
-if(localStorage.oled==="on")document.body.classList.add("oled")
-
-function updateTimestamp(){
-const now=new Date()
-$("updated").innerText=now.toLocaleDateString()+" "+now.toLocaleTimeString()
+function applyTheme(){
+  document.body.classList.remove("dark","oled");
+  if(themes[themeIndex]==="dark")document.body.classList.add("dark");
+  if(themes[themeIndex]==="oled")document.body.classList.add("oled");
+  themeBtn.textContent=themes[themeIndex]==="light"?"🌙 Dark":themes[themeIndex]==="dark"?"🖤 OLED":"☀️ Light";
+  localStorage.setItem("theme",themeIndex);
 }
-
-function aqiColor(pm){
-if(pm<=50)return "#2ECC71";
-if(pm<=100)return "#F1C40F";
-if(pm<=150)return "#E67E22";
-if(pm<=200)return "#E74C3C";
-if(pm<=300)return "#8E44AD";
-return "#7B241C";
+function applyElder(){
+  document.body.classList.toggle("elder",elderOn);
+  elderBtn.textContent=elderOn?"🧓 XL ✓":"🧓 XL";
+  localStorage.setItem("elder",elderOn);
 }
+themeBtn.onclick=()=>{themeIndex=(themeIndex+1)%3;applyTheme();}
+elderBtn.onclick=()=>{elderOn=!elderOn;applyElder();}
+applyTheme();applyElder();
 
-function applyData({w,a}){
-const t=w.hourly.temperature_2m[0]
-$("temp").innerText=toTemp(t)
-
-$("tmin").innerText=toTemp(w.daily.temperature_2m_min[0])
-$("tmax").innerText=toTemp(w.daily.temperature_2m_max[0])
-
-const t24=w.hourly.temperature_2m.slice(0,24)
-$("t24min").innerText=toTemp(Math.min(...t24))
-$("t24max").innerText=toTemp(Math.max(...t24))
-
-$("t7min").innerText=toTemp(Math.min(...w.daily.temperature_2m_min))
-$("t7max").innerText=toTemp(Math.max(...w.daily.temperature_2m_max))
-
-const rain24=w.hourly.precipitation.slice(0,24).reduce((a,b)=>a+b,0)
-$("rain").innerText=w.hourly.precipitation[0].toFixed(1)+" mm"
-$("rain24").innerText=rain24.toFixed(1)+" mm"
-$("rain7").innerText=(rain24*3).toFixed(1)+" mm"
-
-$("flood").innerText=Math.min(100,Math.round(rain24*2))+"%"
-$("monsoon").innerText=rain24>60?"Extreme":rain24>30?"Strong":"Normal"
-$("cyclone").innerText=rain24>120?"Alert":"None"
-
-const pm=a.hourly.pm2_5[0]
-$("pm").innerText=Math.round(pm)+" µg/m³"
-$("pm").style.color = aqiColor(pm)
-$("child").innerText=pm>75?"High":"Low"
-$("child").style.color = aqiColor(pm)
-$("old").innerText=pm>100?"High":"Moderate"
-$("old").style.color = aqiColor(pm)
-$("asthma").innerText=pm>60?"High":"Low"
-$("asthma").style.color = aqiColor(pm)
-
-$("heat").innerText=t>=40?"Severe":t>=35?"High":"Normal"
-$("night").innerText=t>=30?"Uncomfortable":"Normal"
-$("power").innerText=t>=35?"Peak Load":"Normal"
-
-$("sun").innerText=w.daily.sunrise[0].slice(11,16)+" / "+w.daily.sunset[0].slice(11,16)
-
-updateTimestamp()
-}
+/* SCIENCE & UTILS */
+function wetBulbTemp(T,RH){return T*Math.atan(0.151977*Math.sqrt(RH+8.313659))+Math.atan(T+RH)-Math.atan(RH-1.676331)+0.00391838*Math.pow(RH,1.5)*Math.atan(0.023101*RH)-4.686035;}
+function feelsLike(T,RH,W){return T+0.33*(RH/100*6.105*Math.exp(17.27*T/(237.7+T)))-0.7*W-4;}
+function pm25ToAQI(pm){if(pm<=12)return Math.round(pm*50/12);if(pm<=35.4)return Math.round(50+(pm-12)*50/23.4);if(pm<=55.4)return Math.round(100+(pm-35.4)*100/20);if(pm<=150.4)return Math.round(200+(pm-55.4)*100/95);return 300;}
 
 async function load(lat,lon,name){
-$("city").innerText=name
-try{
-const w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset&timezone=auto`).then(r=>r.json())
-const a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`).then(r=>r.json())
-lastData={w,a}
-applyData(lastData)
-}catch{ $("temp").innerText="Offline" }
+  city.innerText=name;
+
+  const w=await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,precipitation_probability,wind_speed_10m&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset,uv_index_max&current_weather=true&timezone=auto`
+  ).then(r=>r.json());
+
+  const a=await fetch(
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5`
+  ).then(r=>r.json());
+
+  const t=w.current_weather.temperature;
+  const h=w.hourly.relative_humidity_2m[0];
+  const windv=w.current_weather.windspeed;
+  const rain=w.hourly.precipitation_probability[0];
+  const rainHourly=w.hourly.precipitation.slice(0,24);
+  const pm=a.hourly.pm2_5[0];
+
+  temp.innerText=t+"°C";
+  feels.innerText=feelsLike(t,h,windv).toFixed(1)+"°C";
+  humidity.innerText=h+"%";
+  wind.innerText=windv+" km/h";
+
+  // 24H min/max temp
+  const next24=w.hourly.temperature_2m.slice(0,24);
+  min24.innerText=Math.min(...next24).toFixed(1)+"°C";
+  max24.innerText=Math.max(...next24).toFixed(1)+"°C";
+
+  // 24H total rain
+  rain24.innerText=rainHourly.reduce((a,b)=>a+b,0).toFixed(1);
+
+  // 7-day
+  weekly.innerHTML="";
+  w.daily.temperature_2m_min.forEach((min,i)=>{
+    const max=w.daily.temperature_2m_max[i];
+    weekly.innerHTML+=`<div class="card">Day ${i+1}<b>${min.toFixed(0)}° / ${max.toFixed(0)}°</b><div class="small">Min / Max</div></div>`;
+  });
+
+  // Rain & Storm
+  rainProb.innerText=rain+"%";
+  rainIntensity.innerText=rain<20?"None":rain<50?"Moderate":rain<80?"Heavy":"Very Heavy";
+  stormETA.innerText=rain>=60?"High (6–12 hrs)":"Low";
+  roadRisk.innerText=rain>=70?"Avoid":rain>=40?"Caution":"Safe";
+
+  // AQI
+  aqi.innerText=pm25ToAQI(pm);
+  aqiChild.innerText=pm>75?"High":"Low";
+  aqiOld.innerText=pm>100?"High":"Moderate";
+  aqiAsthma.innerText=pm>60?"High":"Low";
+
+  // UV & Heat
+  const uvmax=w.daily.uv_index_max[0];
+  uv.innerText=uvmax;
+  sunburn.innerText=uvmax>=8?"Severe":uvmax>=5?"High":"Low";
+
+  wetbulb.innerText=wetBulbTemp(t,h).toFixed(1)+"°C";
+  coldRisk.innerText=(t<=10&&windv>10)?"High":(t<=12)?"Moderate":"Low";
+
+  // Mood & Productivity
+  mood.innerText=rain>=60?"Irritable":t>=35?"Drained":"Calm";
+  productivity.innerText=(t>=20&&t<=30&&rain<30)?"High":"Low";
+
+  // Sun
+  sun.innerText=w.daily.sunrise[0].slice(11)+" / "+w.daily.sunset[0].slice(11);
+  updated.innerText=new Date().toLocaleTimeString();
 }
 
-function useMyLocation(){
-navigator.geolocation.getCurrentPosition(
-p=>load(p.coords.latitude,p.coords.longitude,"My Location"),
-()=>load(22.57,88.36,"Kolkata")
-)
-}
-async function searchCity(){
-if(!search.value)return
-const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${search.value}&count=1`).then(r=>r.json())
-if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name)
-}
-
-useMyLocation()
+function useMyLocation(){navigator.geolocation.getCurrentPosition(p=>load(p.coords.latitude,p.coords.longitude,"My Location"),()=>load(22.57,88.36,"Kolkata"))}
+async function searchCity(){if(!search.value)return;const g=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${search.value}&count=1`).then(r=>r.json());if(g.results)load(g.results[0].latitude,g.results[0].longitude,g.results[0].name);}
+useMyLocation();
 </script>
-
 </body>
 </html>
