@@ -4,49 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Rituva Weather</title>
-
-<!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="apple-touch-icon" href="icon-192.png">
-
 <style>
-:root{
-  --bg:#000; --soft:#1a1a1a; --card:#2a2a2a; --text:#fff;
-}
+:root{--bg:#000;--soft:#1a1a1a;--card:#2a2a2a;--text:#fff;}
 *{box-sizing:border-box;}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  font-size:18px;
-  line-height:1.5;
-}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto;font-size:18px;line-height:1.5;}
 .app{max-width:480px;margin:auto;padding:16px;}
-.header{font-size:30px;font-weight:900;margin-bottom:12px}
+.header{font-size:30px;font-weight:900;margin-bottom:12px;}
 input,.btn,.card{width:100%;max-width:100%;box-sizing:border-box;}
 input,.btn{padding:16px;border-radius:18px;border:none;background:var(--soft);color:white;font-size:18px;margin-bottom:12px;}
-.btn{font-weight:700}
-.location{font-size:22px;font-weight:700;margin:10px 0}
-.temp{font-size:72px;font-weight:900;text-align:center;margin:10px 0}
-.icon{text-align:center;font-size:52px;margin-top:-10px}
+.btn{font-weight:700;}
+.location{font-size:22px;font-weight:700;margin:10px 0;}
+.temp{font-size:72px;font-weight:900;text-align:center;margin:10px 0;}
+.icon{text-align:center;font-size:52px;margin-top:-10px;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
-.card{background:var(--card);border-radius:20px;padding:16px}
-.card-title{font-size:16px;opacity:.9}
-.card-value{font-size:30px;font-weight:800}
-.section{margin-top:22px}
-.section-title{font-size:22px;font-weight:800;margin-bottom:10px}
-.week{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.day{background:var(--soft);border-radius:16px;padding:12px;text-align:center}
-.day-name{font-size:16px;font-weight:700}
-.day-temp{font-size:18px;font-weight:800;margin-top:6px}
-.hourly-scroll{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px}
-.hour{min-width:80px;background:var(--soft);padding:10px;border-radius:14px;text-align:center}
-.hour-time{font-weight:700;font-size:14px}
-.hour-temp{font-size:18px;font-weight:800;margin-top:4px}
-.footer{text-align:center;font-size:13px;opacity:.6;margin:18px 0}
-@media(min-width:768px){.app{max-width:720px}.temp{font-size:86px}}
+.card{background:var(--card);border-radius:20px;padding:16px;}
+.card-title{font-size:16px;opacity:.9;}
+.card-value{font-size:30px;font-weight:800;}
+.section{margin-top:22px;}
+.section-title{font-size:22px;font-weight:800;margin-bottom:10px;}
+.week{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.day{background:var(--soft);border-radius:16px;padding:12px;text-align:center;}
+.day-name{font-size:16px;font-weight:700;}
+.day-temp{font-size:18px;font-weight:800;margin-top:6px;}
+.hourly-scroll{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px;}
+.hour{min-width:80px;background:var(--soft);padding:10px;border-radius:14px;text-align:center;}
+.hour-time{font-weight:700;font-size:14px;}
+.hour-temp{font-size:18px;font-weight:800;margin-top:4px;}
+.footer{text-align:center;font-size:13px;opacity:.6;margin:18px 0;}
+@media(min-width:768px){.app{max-width:720px}.temp{font-size:86px;}}
 @media(max-width:400px){.app{padding:12px}.temp{font-size:60px}input,.btn{padding:14px;font-size:16px}.card{padding:12px}}
 </style>
 </head>
@@ -64,7 +52,9 @@ input,.btn{padding:16px;border-radius:18px;border:none;background:var(--soft);co
   <div class="card"><div class="card-title">AQI (US)</div><div class="card-value" id="aqi">--</div></div>
   <div class="card"><div class="card-title">Wind (km/h)</div><div class="card-value" id="wind">--</div></div>
   <div class="card"><div class="card-title">Humidity (%)</div><div class="card-value" id="humidity">--</div></div>
-  <div class="card"><div class="card-title">Rain Chance (%)</div><div class="card-value" id="rain">--</div></div>
+  <div class="card"><div class="card-title">Rain Chance (%)</div><div class="card-value" id="rainChance">--</div></div>
+  <div class="card"><div class="card-title">Total Rain (mm)</div><div class="card-value" id="totalRain">--</div></div>
+  <div class="card"><div class="card-title">Rain Intensity (mm/h)</div><div class="card-value" id="rainIntensity">--</div></div>
 </div>
 
 <div class="section">
@@ -93,17 +83,40 @@ input,.btn{padding:16px;border-radius:18px;border:none;background:var(--soft);co
   <div class="week" id="week"></div>
 </div>
 
-<div class="footer">Powered by Open-Meteo</div>
+<div class="section">
+  <div class="section-title">Lifestyle & AC Advice</div>
+  <div class="grid">
+    <div class="card"><div class="card-title">Clothing</div><div class="card-value" id="clothing">--</div></div>
+    <div class="card"><div class="card-title">Outdoor Activity</div><div class="card-value" id="outdoor">--</div></div>
+    <div class="card"><div class="card-title">AC / Cooling</div><div class="card-value" id="ac">--</div></div>
+    <div class="card"><div class="card-title">Air Quality Advice</div><div class="card-value" id="airAdvice">--</div></div>
+  </div>
+</div>
+
+<!-- Footer with auto-updating year -->
+<div class="footer" id="footer">© Manik Roy 2026. All Rights Reserved.</div>
+
 </div>
 
 <script>
 const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const placeEl=place,tempEl=temp,windEl=wind,aqiEl=aqi,tminEl=tmin,tmaxEl=tmax,weekEl=week,hourlyEl=hourly,iconEl=icon,cityInput=city;
 const humidityEl=document.getElementById("humidity");
-const rainEl=document.getElementById("rain");
+const rainChanceEl=document.getElementById("rainChance");
+const totalRainEl=document.getElementById("totalRain");
+const rainIntensityEl=document.getElementById("rainIntensity");
 const sunriseEl=document.getElementById("sunrise");
 const sunsetEl=document.getElementById("sunset");
+const clothingEl=document.getElementById("clothing");
+const outdoorEl=document.getElementById("outdoor");
+const acEl=document.getElementById("ac");
+const airAdviceEl=document.getElementById("airAdvice");
+const footerEl = document.getElementById("footer");
 
+// Auto-update year
+footerEl.innerHTML = `© Manik Roy ${new Date().getFullYear()}. All Rights Reserved.`;
+
+// Weather helper functions
 function weatherIcon(code){
   if(code===0) return "☀️";
   if(code<=3) return "⛅";
@@ -115,7 +128,6 @@ function weatherIcon(code){
   return "☁️";
 }
 
-// US AQI calculation for PM2.5
 function usAQI(pm){
   const breakpoints=[
     {c_lo:0.0,c_hi:12.0,i_lo:0,i_hi:50},
@@ -142,24 +154,59 @@ function aqiColorUS(aqi){
   return "#7f1d1d";
 }
 
+function lifestyleAdvice(temp, humidity, rainChance, aqi){
+  let clothing="Comfortable";
+  if(temp>=30) clothing="Light, breathable clothes";
+  else if(temp<=18) clothing="Warm clothes, jacket";
+  
+  let outdoor="Normal activity";
+  if(rainChance>50) outdoor="Carry umbrella / avoid outdoor";
+  else if(temp>=35) outdoor="Limit outdoor activity";
+
+  let ac="Use as needed";
+  if(temp>=28) ac="Turn on AC / fan";
+  else if(temp<=20) ac="AC off, heating if needed";
+
+  let airAdvice="Air is good";
+  if(aqi>100 && aqi<=150) airAdvice="Sensitive people reduce outdoor";
+  else if(aqi>150) airAdvice="Stay indoors / wear mask";
+
+  return {clothing,outdoor,ac,airAdvice};
+}
+
+// loadWeather with offline fallback
 async function loadWeather(lat,lon,label){
 try{
   placeEl.innerText="Loading…";
-
-  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-    `&current_weather=true`+
-    `&hourly=temperature_2m,relativehumidity_2m,precipitation_probability`+
-    `&daily=temperature_2m_min,temperature_2m_max,weathercode,sunrise,sunset`+
-    `&timezone=auto`;
-
-  const w=await fetch(url).then(r=>r.json());
+  let w;
+  if(!navigator.onLine && localStorage.getItem("lastWeather")){
+    w = JSON.parse(localStorage.getItem("lastWeather"));
+    placeEl.innerText="Offline - showing last weather";
+  } else {
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+      `&current_weather=true`+
+      `&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,precipitation`+
+      `&daily=temperature_2m_min,temperature_2m_max,weathercode,sunrise,sunset,precipitation_sum,precipitation_hours`+
+      `&timezone=auto`;
+    w = await fetch(url).then(r=>r.json());
+    localStorage.setItem("lastWeather", JSON.stringify(w));
+  }
 
   tempEl.innerText=w.current_weather.temperature+"°C";
   windEl.innerText=Math.round(w.current_weather.windspeed);
   iconEl.innerText=weatherIcon(w.current_weather.weathercode);
 
   humidityEl.innerText=Math.round(w.hourly.relativehumidity_2m[0]);
-  rainEl.innerText=Math.round(w.hourly.precipitation_probability[0]);
+  const rainChance=w.hourly.precipitation_probability[0];
+  const rainIntensity=w.hourly.precipitation[0];
+  const totalRain=w.daily.precipitation_sum[0];
+
+  rainChanceEl.innerText=rainChance+"%";
+  rainIntensityEl.innerText=rainIntensity.toFixed(1)+" mm/h";
+  totalRainEl.innerText=totalRain.toFixed(1)+" mm";
+
+  const rainIcon=rainChance>0?"🌧️":"☀️";
+  iconEl.innerText=weatherIcon(w.current_weather.weathercode)+" "+rainIcon;
 
   tminEl.innerText=Math.min(...w.hourly.temperature_2m.slice(0,24))+"°";
   tmaxEl.innerText=Math.max(...w.hourly.temperature_2m.slice(0,24))+"°";
@@ -167,16 +214,21 @@ try{
   hourlyEl.innerHTML="";
   for(let i=0;i<24;i++){
     const h=new Date(w.hourly.time[i]).getHours();
-    hourlyEl.innerHTML+=`<div class="hour"><div class="hour-time">${h}:00</div><div class="hour-temp">${w.hourly.temperature_2m[i]}°</div><div style="font-size:14px;">☔${w.hourly.precipitation_probability[i]}%</div></div>`;
+    const chance=w.hourly.precipitation_probability[i];
+    const intensity=w.hourly.precipitation[i];
+    const icon=chance>0?"🌧️":"☀️";
+    hourlyEl.innerHTML+=`<div class="hour"><div class="hour-time">${h}:00</div><div class="hour-temp">${w.hourly.temperature_2m[i]}°</div><div style="font-size:14px">${icon} ${chance}% / ${intensity.toFixed(1)} mm/h</div></div>`;
   }
 
-  sunriseEl.innerText=new Date(w.daily.sunrise[0]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  sunsetEl.innerText=new Date(w.daily.sunset[0]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  sunriseEl.innerText=new Date(w.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  sunsetEl.innerText=new Date(w.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 
   weekEl.innerHTML="";
   for(let i=0;i<w.daily.time.length;i++){
     const d=new Date(w.daily.time[i]);
-    weekEl.innerHTML+=`<div class="day"><div class="day-name">${days[d.getDay()]}</div><div style="font-size:26px">${weatherIcon(w.daily.weathercode[i])}</div><div class="day-temp">${w.daily.temperature_2m_min[i]}° / ${w.daily.temperature_2m_max[i]}°</div></div>`;
+    const total=w.daily.precipitation_sum[i];
+    const chance=w.daily.precipitation_hours[i];
+    weekEl.innerHTML+=`<div class="day"><div class="day-name">${days[d.getDay()]}</div><div style="font-size:26px">${weatherIcon(w.daily.weathercode[i])}</div><div class="day-temp">${w.daily.temperature_2m_min[i]}° / ${w.daily.temperature_2m_max[i]}°</div><div style="font-size:14px">🌧️ Total: ${total.toFixed(1)} mm, Hours: ${chance}</div></div>`;
   }
 
   placeEl.innerText=label;
@@ -186,6 +238,12 @@ try{
   const aqi=usAQI(pm);
   aqiEl.innerText=aqi;
   aqiEl.style.color=aqiColorUS(aqi);
+
+  const advice=lifestyleAdvice(w.current_weather.temperature,humidityEl.innerText,rainChance,aqi);
+  clothingEl.innerText=advice.clothing;
+  outdoorEl.innerText=advice.outdoor;
+  acEl.innerText=advice.ac;
+  airAdviceEl.innerText=advice.airAdvice;
 
 }catch(err){console.error(err);placeEl.innerText="Weather load failed";}
 }
@@ -212,18 +270,13 @@ try{
 }catch{placeEl.innerText="Search failed";}
 }
 
-// PWA registration
+// Service Worker
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js')
-    .then(reg => console.log('SW registered:', reg.scope))
-    .catch(err => console.log('SW registration failed:', err));
-  });
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(reg=>console.log('SW registered:',reg.scope)).catch(err=>console.log('SW failed:',err));});
 }
 
-// Offline / online notice
-window.addEventListener('offline', ()=>{ placeEl.innerText="You are offline. Showing cached data."; });
-window.addEventListener('online', ()=>{ detectLocation(false); });
+window.addEventListener('offline',()=>{ placeEl.innerText="You are offline. Showing last cached data."; });
+window.addEventListener('online',()=>{ detectLocation(false); });
 
 window.addEventListener("load",()=>detectLocation(false));
 </script>
