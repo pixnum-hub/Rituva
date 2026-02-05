@@ -1,11 +1,13 @@
 {
   "name": "Rituva Weather",
   "short_name": "Rituva",
-  "description": "Live weather app with hourly forecast, 7-day forecast, US AQI, and location detection.",
+  "description": "Realtime weather, AQI, rain, lifestyle advice, and 7-day forecast.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "scope": "./",
   "icons": [
     {
       "src": "icon-192.png",
