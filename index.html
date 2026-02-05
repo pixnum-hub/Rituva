@@ -7,46 +7,132 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="apple-touch-icon" href="icon-192.png">
+
 <style>
-:root{--bg:#000;--soft:#1a1a1a;--card:#2a2a2a;--text:#fff;}
+:root{
+  --bg:#000;
+  --soft:#1a1a1a;
+  --card:#2a2a2a;
+  --text:#fff;
+}
 *{box-sizing:border-box;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto;font-size:18px;line-height:1.5;}
-.app{max-width:480px;margin:auto;padding:16px;}
-.header{font-size:30px;font-weight:900;margin-bottom:12px;}
-input,.btn,.card{width:100%;max-width:100%;box-sizing:border-box;}
-input,.btn{padding:16px;border-radius:18px;border:none;background:var(--soft);color:white;font-size:18px;margin-bottom:12px;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  line-height:1.4;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  padding:16px;
+}
+.header{
+  font-size:32px;
+  font-weight:900;
+  margin-bottom:14px;
+}
+input,.btn{
+  width:100%;
+  padding:16px;
+  border-radius:18px;
+  border:none;
+  background:var(--soft);
+  color:white;
+  font-size:18px;
+  margin-bottom:12px;
+}
 .btn{font-weight:700;}
-.location{font-size:22px;font-weight:700;margin:10px 0;}
-.temp{font-size:72px;font-weight:900;text-align:center;margin:10px 0;}
-.icon{text-align:center;font-size:52px;margin-top:-10px;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
-.card{background:var(--card);border-radius:20px;padding:16px;}
+.location{
+  font-size:22px;
+  font-weight:700;
+  margin:10px 0;
+  text-align:center;
+}
+.temp{
+  font-size:72px;
+  font-weight:900;
+  text-align:center;
+  margin:8px 0;
+}
+.icon{
+  text-align:center;
+  font-size:52px;
+  margin:6px 0 20px 0;
+}
+.icon span#rainIcon{
+  font-size:32px;
+  margin-left:6px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:12px;
+}
+.card{
+  background:var(--card);
+  border-radius:20px;
+  padding:16px;
+}
 .card-title{font-size:16px;opacity:.9;}
-.card-value{font-size:30px;font-weight:800;}
+.card-value{font-size:28px;font-weight:800;}
 .section{margin-top:22px;}
-.section-title{font-size:22px;font-weight:800;margin-bottom:10px;}
+.section-title{
+  font-size:22px;
+  font-weight:800;
+  margin-bottom:10px;
+}
 .week{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .day{background:var(--soft);border-radius:16px;padding:12px;text-align:center;}
 .day-name{font-size:16px;font-weight:700;}
-.day-temp{font-size:18px;font-weight:800;margin-top:6px;}
-.hourly-scroll{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px;}
-.hour{min-width:80px;background:var(--soft);padding:10px;border-radius:14px;text-align:center;}
+.day-temp{font-size:18px;font-weight:800;margin-top:4px;}
+.hourly-scroll{
+  display:flex;
+  overflow-x:auto;
+  gap:10px;
+  padding-bottom:6px;
+  padding-left:4px;
+}
+.hour{
+  min-width:80px;
+  background:var(--soft);
+  padding:10px;
+  border-radius:14px;
+  text-align:center;
+  flex-shrink:0;
+}
 .hour-time{font-weight:700;font-size:14px;}
-.hour-temp{font-size:18px;font-weight:800;margin-top:4px;}
-.footer{text-align:center;font-size:13px;opacity:.6;margin:18px 0;}
-@media(min-width:768px){.app{max-width:720px}.temp{font-size:86px;}}
-@media(max-width:400px){.app{padding:12px}.temp{font-size:60px}input,.btn{padding:14px;font-size:16px}.card{padding:12px}}
+.hour-temp{font-size:16px;font-weight:800;margin-top:4px;}
+.footer{
+  text-align:center;
+  font-size:13px;
+  opacity:.6;
+  margin:18px 0;
+}
+@media(min-width:768px){
+  .app{max-width:720px;}
+  .temp{font-size:86px;}
+}
 </style>
 </head>
+
 <body>
 <div class="app">
+
 <div class="header">🌦 Rituva</div>
+
 <input id="city" placeholder="Search city">
 <div class="btn" onclick="searchCity()">Search</div>
 <div class="btn" onclick="detectLocation(true)">📍 Use My Location</div>
+
 <div class="location" id="place">Detecting location…</div>
 <div class="temp" id="temp">--°C</div>
-<div class="icon" id="icon">☁️</div>
+<div class="icon" id="icon">
+  <span id="mainIcon">☀️</span>
+  <span id="rainIcon"></span>
+</div>
 
 <div class="grid">
   <div class="card"><div class="card-title">AQI (US)</div><div class="card-value" id="aqi">--</div></div>
@@ -93,14 +179,16 @@ input,.btn{padding:16px;border-radius:18px;border:none;background:var(--soft);co
   </div>
 </div>
 
-<!-- Footer with auto-updating year -->
 <div class="footer" id="footer">© Manik Roy 2026. All Rights Reserved.</div>
 
 </div>
 
 <script>
 const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const placeEl=place,tempEl=temp,windEl=wind,aqiEl=aqi,tminEl=tmin,tmaxEl=tmax,weekEl=week,hourlyEl=hourly,iconEl=icon,cityInput=city;
+const placeEl=place,tempEl=temp,windEl=wind,aqiEl=aqi,tminEl=tmin,tmaxEl=tmax,weekEl=week,hourlyEl=hourly;
+const mainIconEl=document.getElementById("mainIcon");
+const rainIconEl=document.getElementById("rainIcon");
+const cityInput=city;
 const humidityEl=document.getElementById("humidity");
 const rainChanceEl=document.getElementById("rainChance");
 const totalRainEl=document.getElementById("totalRain");
@@ -116,7 +204,7 @@ const footerEl = document.getElementById("footer");
 // Auto-update year
 footerEl.innerHTML = `© Manik Roy ${new Date().getFullYear()}. All Rights Reserved.`;
 
-// Weather helper functions
+// Weather helpers
 function weatherIcon(code){
   if(code===0) return "☀️";
   if(code<=3) return "⛅";
@@ -129,88 +217,49 @@ function weatherIcon(code){
 }
 
 function usAQI(pm){
-  const breakpoints=[
-    {c_lo:0.0,c_hi:12.0,i_lo:0,i_hi:50},
-    {c_lo:12.1,c_hi:35.4,i_lo:51,i_hi:100},
-    {c_lo:35.5,c_hi:55.4,i_lo:101,i_hi:150},
-    {c_lo:55.5,c_hi:150.4,i_lo:151,i_hi:200},
-    {c_lo:150.5,c_hi:250.4,i_lo:201,i_hi:300},
-    {c_lo:250.5,c_hi:500.0,i_lo:301,i_hi:500}
-  ];
-  for(const b of breakpoints){
-    if(pm >= b.c_lo && pm <= b.c_hi){
-      return Math.round((b.i_hi-b.i_lo)/(b.c_hi-b.c_lo)*(pm-b.c_lo)+b.i_lo);
-    }
-  }
+  const breakpoints=[{c_lo:0.0,c_hi:12.0,i_lo:0,i_hi:50},{c_lo:12.1,c_hi:35.4,i_lo:51,i_hi:100},{c_lo:35.5,c_hi:55.4,i_lo:101,i_hi:150},{c_lo:55.5,c_hi:150.4,i_lo:151,i_hi:200},{c_lo:150.5,c_hi:250.4,i_lo:201,i_hi:300},{c_lo:250.5,c_hi:500.0,i_lo:301,i_hi:500}];
+  for(const b of breakpoints){if(pm >= b.c_lo && pm <= b.c_hi){return Math.round((b.i_hi-b.i_lo)/(b.c_hi-b.c_lo)*(pm-b.c_lo)+b.i_lo);}}
   return pm;
 }
-
-function aqiColorUS(aqi){
-  if(aqi<=50) return "#2ecc71";
-  if(aqi<=100) return "#f1c40f";
-  if(aqi<=150) return "#e67e22";
-  if(aqi<=200) return "#e74c3c";
-  if(aqi<=300) return "#8e44ad";
-  return "#7f1d1d";
-}
-
+function aqiColorUS(aqi){if(aqi<=50) return "#2ecc71";if(aqi<=100) return "#f1c40f";if(aqi<=150) return "#e67e22";if(aqi<=200) return "#e74c3c";if(aqi<=300) return "#8e44ad";return "#7f1d1d";}
 function lifestyleAdvice(temp, humidity, rainChance, aqi){
-  let clothing="Comfortable";
-  if(temp>=30) clothing="Light, breathable clothes";
-  else if(temp<=18) clothing="Warm clothes, jacket";
-  
-  let outdoor="Normal activity";
-  if(rainChance>50) outdoor="Carry umbrella / avoid outdoor";
-  else if(temp>=35) outdoor="Limit outdoor activity";
-
-  let ac="Use as needed";
-  if(temp>=28) ac="Turn on AC / fan";
-  else if(temp<=20) ac="AC off, heating if needed";
-
-  let airAdvice="Air is good";
-  if(aqi>100 && aqi<=150) airAdvice="Sensitive people reduce outdoor";
-  else if(aqi>150) airAdvice="Stay indoors / wear mask";
-
+  let clothing="Comfortable";if(temp>=30) clothing="Light, breathable clothes";else if(temp<=18) clothing="Warm clothes, jacket";
+  let outdoor="Normal activity";if(rainChance>50) outdoor="Carry umbrella / avoid outdoor";else if(temp>=35) outdoor="Limit outdoor activity";
+  let ac="Use as needed";if(temp>=28) ac="Turn on AC / fan";else if(temp<=20) ac="AC off, heating if needed";
+  let airAdvice="Air is good";if(aqi>100 && aqi<=150) airAdvice="Sensitive people reduce outdoor";else if(aqi>150) airAdvice="Stay indoors / wear mask";
   return {clothing,outdoor,ac,airAdvice};
 }
 
-// loadWeather with offline fallback
+// Load weather
 async function loadWeather(lat,lon,label){
 try{
   placeEl.innerText="Loading…";
-  let w;
-  if(!navigator.onLine && localStorage.getItem("lastWeather")){
-    w = JSON.parse(localStorage.getItem("lastWeather"));
-    placeEl.innerText="Offline - showing last weather";
-  } else {
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
       `&current_weather=true`+
       `&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,precipitation`+
       `&daily=temperature_2m_min,temperature_2m_max,weathercode,sunrise,sunset,precipitation_sum,precipitation_hours`+
       `&timezone=auto`;
-    w = await fetch(url).then(r=>r.json());
-    localStorage.setItem("lastWeather", JSON.stringify(w));
-  }
+  const w = await fetch(url).then(r=>r.json());
 
   tempEl.innerText=w.current_weather.temperature+"°C";
   windEl.innerText=Math.round(w.current_weather.windspeed);
-  iconEl.innerText=weatherIcon(w.current_weather.weathercode);
-
   humidityEl.innerText=Math.round(w.hourly.relativehumidity_2m[0]);
+
   const rainChance=w.hourly.precipitation_probability[0];
   const rainIntensity=w.hourly.precipitation[0];
   const totalRain=w.daily.precipitation_sum[0];
-
   rainChanceEl.innerText=rainChance+"%";
   rainIntensityEl.innerText=rainIntensity.toFixed(1)+" mm/h";
   totalRainEl.innerText=totalRain.toFixed(1)+" mm";
 
-  const rainIcon=rainChance>0?"🌧️":"☀️";
-  iconEl.innerText=weatherIcon(w.current_weather.weathercode)+" "+rainIcon;
+  // Weather icon fix
+  mainIconEl.innerText = weatherIcon(w.current_weather.weathercode);
+  rainIconEl.innerText = rainChance>0?"🌧️":"";
 
   tminEl.innerText=Math.min(...w.hourly.temperature_2m.slice(0,24))+"°";
   tmaxEl.innerText=Math.max(...w.hourly.temperature_2m.slice(0,24))+"°";
 
+  // Hourly forecast
   hourlyEl.innerHTML="";
   for(let i=0;i<24;i++){
     const h=new Date(w.hourly.time[i]).getHours();
