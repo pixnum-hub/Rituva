@@ -1,26 +1,29 @@
-const CACHE="rituva-v1";
-const ASSETS=["./","./index.html","./manifest.json","./icon-192.png","./icon-512.png"];
+const CACHE_NAME = "rituva-cache-v1";
+const urlsToCache = [
+  "./index.html",
+  "./manifest.json",
+  "./sw.js",
+  "./icon-192.png",
+  "./icon-512.png"
+];
 
-self.addEventListener("install",e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener("activate",e=>{
-  e.waitUntil(
-    caches.keys().then(keys=>Promise.all(keys.map(k=>k!==CACHE&&caches.delete(k))))
+// Install Service Worker
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
-  self.clients.claim();
 });
-self.addEventListener("fetch",e=>{
-  e.respondWith(
-    caches.match(e.request).then(r=>r||
-      fetch(e.request).then(n=>{
-        if(e.request.url.startsWith("http")){
-          const c=n.clone();
-          caches.open(CACHE).then(cache=>cache.put(e.request,c));
-        }
-        return n;
-      }).catch(()=>r)
-    )
+
+// Activate
+self.addEventListener("activate", event => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Fetch
+self.addEventListener("fetch", event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
   );
 });
